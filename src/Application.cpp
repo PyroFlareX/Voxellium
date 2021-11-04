@@ -13,7 +13,7 @@ Application::Application()
 	
 
 	// Needed for setup
-	m_context = new bs::Context();
+	m_context = new bs::Context("Voxellium");
 	m_device = new bs::Device();
 	m_context->setDeviceptr(m_device);
 	m_context->initAPI();

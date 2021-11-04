@@ -10,7 +10,7 @@ namespace bs
 	class Context
 	{
 	public:
-		Context();
+		Context(const std::string& title);
 		void setIcon(Image& icon);
 
 		void clear(); //Clear screen
@@ -42,6 +42,7 @@ namespace bs
 		int currentFrame = 0;
 
 		uint32_t imageIndex;
+		const std::string m_windowname;
 	};
 
 

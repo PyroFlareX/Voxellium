@@ -7,13 +7,13 @@
 
 namespace bs
 {
-	Context::Context()
+	Context::Context(const std::string& title)	: m_windowname(title)
 	{
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		m_window = glfwCreateWindow(bs::vk::viewportwidth, bs::vk::viewportheight, "V2 Save Analyzer", nullptr, nullptr);
+		m_window = glfwCreateWindow(bs::vk::viewportwidth, bs::vk::viewportheight, m_windowname.c_str(), nullptr, nullptr);
 		glfwSetWindowUserPointer(m_window, this);
 	}
 
