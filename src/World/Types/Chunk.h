@@ -5,18 +5,30 @@ constexpr auto CHUNK_SIZE = 16;
 constexpr auto CHUNK_AREA = CHUNK_SIZE * CHUNK_SIZE;
 constexpr auto CHUNK_VOLUME = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
-#include "AliasTypes.h"
 #include <array>
 
-class Chunk
+#include <Types/BaseInheritables.h>
+#include "AliasTypes.h"
+
+class Chunk	:	public bs::NonCopyable
 {
 public:
 	Chunk(pos_xyz pos);
+	/*Chunk(const Chunk&) = delete;	//No copying
+	Chunk(Chunk&&) = default;	//Move only*/
 
 	//Get the block id for the block at the given position
 	block_t getBlockAt(const pos_xyz& local_position) const;
 	//Get the block id for the block at the given position
-	block_t& getBlockAt(const pos_xyz& local_position);	
+	block_t& getBlockAt(const pos_xyz& local_position);
+	//Set a block at the relative position
+	void setBlockAt(const pos_xyz& local_position, block_t block);
+	//Checks if the chunk has any blocks (non air)
+	bool isEmpty() const noexcept;
+	//Returns whether the chunk needs a mesh built / has been updated
+	bool needsMesh() const noexcept;
+	//Set the flag so that only one remesh on this is active
+	void setRemeshingFlag();
 
 private:
 	/// Members
@@ -27,13 +39,14 @@ private:
 	//Caches whether the chunk is empty
 	bool m_empty;
 	//Whether the chunk has a mesh
+	// @TODO: Change this to an optional with the mesh
 	bool m_has_mesh;
-	//Whether the chunk wants a new mesh built, trigger when there is a change
+	
+	//Set when the chunk needs to be updated too (?)
+	//Whether the chunk wants a new mesh built
 	bool m_needs_mesh;
 
 	/// Functions
 	//Checks whether empty
 	bool checkIfEmpty() const noexcept;
-	//Returns whether the chunk needs a mesh built
-	bool needsMesh() const noexcept;
 };

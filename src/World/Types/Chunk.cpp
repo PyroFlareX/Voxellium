@@ -56,6 +56,13 @@ block_t& Chunk::getBlockAt(const pos_xyz& local_position)
 	return m_chunk_layout.at(toIndex(local_position));
 }
 
+void Chunk::setBlockAt(const pos_xyz& local_position, block_t block)
+{
+	assert(this->isValid(local_position));
+	m_chunk_layout[toIndex(local_position)] = block;
+	m_needs_mesh = true;
+}
+
 bool Chunk::checkIfEmpty() const noexcept
 {
 	for(const auto block_id : m_chunk_layout)
@@ -68,7 +75,19 @@ bool Chunk::checkIfEmpty() const noexcept
 	return false;
 }
 
+bool Chunk::isEmpty() const noexcept
+{
+	return m_empty;
+}
+
+//Returns whether the chunk needs a mesh built
 bool Chunk::needsMesh() const noexcept
 {
 	return m_needs_mesh;
+}
+
+void Chunk::setRemeshingFlag()
+{
+	m_needs_mesh = false;
+	m_empty = checkIfEmpty();
 }

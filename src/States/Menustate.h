@@ -1,10 +1,7 @@
 #ifndef Menustate_H
 #define Menustate_H
 
-#include "Basestate.h"
-
 #include "../Application.h"
-#include <Engine.h>
 
 class Menustate : public Basestate
 {

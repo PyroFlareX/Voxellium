@@ -1,11 +1,53 @@
 #include "World.h"
 
+#include <Engine.h>
+
 //Filler chunk, TEMP, REMOVE LATER
 const Chunk basic_chunk({0, 0, 0});
 
-World::World()
+World::World()	:	m_baseWorld(*(new ChunkMap()))
 {
+	auto* world = &m_baseWorld;
 
+	//Generate some chunks
+	for(int chunk_x = -8; chunk_x < 8; ++chunk_x)
+	{
+		for(int chunk_y = -8; chunk_y < 8; ++chunk_y)
+		{
+			for(int chunk_z = -8; chunk_z < 8; ++chunk_z)
+			{
+				const auto generateChunk = jobSystem.createJob([world, chunk_x, chunk_y, chunk_z](Job j)
+				{
+					const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
+					Chunk chunk(chunk_pos);
+					for(int x = 0; x < CHUNK_SIZE; ++x)
+					{
+						for(int y = 0; y < CHUNK_SIZE; ++y)
+						{
+							for(int z = 0; z < CHUNK_SIZE; ++z)
+							{
+								const pos_xyz worldpos(chunk_x * CHUNK_SIZE + x, 
+														chunk_y * CHUNK_SIZE + y, 
+														chunk_z * CHUNK_SIZE + z);
+								//Generation cooloo!!!
+
+
+							}
+						}
+					}
+
+					world->emplace(std::pair(chunk_pos, std::move(chunk)));
+				});
+				jobSystem.schedule(generateChunk, false);
+			}
+		}
+	}
+}
+
+World::~World()
+{
+	ChunkMap* map_ptr = &m_baseWorld;
+	delete map_ptr;
 }
 
 block_t World::getBlockAt(const pos_xyz& world_pos) const noexcept

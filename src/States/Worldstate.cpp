@@ -26,7 +26,6 @@ void Worldstate::update(float dt)
 	static uint8_t menuIndex = 1;
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
 
-	
 	switch(menuIndex)
 	{
 		case 1:

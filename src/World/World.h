@@ -9,7 +9,7 @@ class World
 {
 public:
 	World();
-	~World() = default;
+	~World();
 
 	block_t getBlockAt(const pos_xyz& world_pos) const noexcept;
 	const Chunk& getChunkAt(const pos_xyz& chunk_coords_pos) const noexcept;
@@ -17,5 +17,5 @@ public:
 private:
 	using ChunkMap = std::unordered_map<pos_xyz, Chunk>;
 
-	ChunkMap m_baseWorld;
+	ChunkMap& m_baseWorld;
 };
