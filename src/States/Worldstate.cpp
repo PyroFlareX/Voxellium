@@ -1,49 +1,37 @@
-#include "Menustate.h"
-
 #include "Worldstate.h"
 
-Menustate::Menustate(Application& app) : Basestate(app)
+
+Worldstate::Worldstate(Application& app) : Basestate(app)
 {
 	
 }
 
-Menustate::~Menustate()
+Worldstate::~Worldstate()
 {
 
 }
 
-PlayerController& Menustate::getPlayer() 
+PlayerController& Worldstate::getPlayer() 
 {
 	return m_player;
 }
 
-bool Menustate::input(float dt)
+bool Worldstate::input(float dt)
 {
 	ImGui::NewFrame();
 	vInput = Input::getInput(dt);
 	auto& io = ImGui::GetIO();
-
+	
 	return false;
 }
 
 
-void Menustate::update(float dt)
+void Worldstate::update(float dt)
 {
 	static uint8_t menuIndex = 1;
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
 
-	if(ImGui::Begin("Main Menu", nullptr, windowflag))
-	{
-		//ImGui::Window
-
-		if(ImGui::Button("Start"))
-		{
-			app.pushState(std::make_unique<Worldstate>(Worldstate(app)));
-		}
-	}
-
-	ImGui::End();
-
+	
 	switch(menuIndex)
 	{
 		case 1:
@@ -51,7 +39,6 @@ void Menustate::update(float dt)
 			
 			break;
 		}
-
 		case 2:
 		{
 			
@@ -60,13 +47,12 @@ void Menustate::update(float dt)
 	}
 }
 
-void Menustate::lateUpdate(Camera& cam)
+void Worldstate::lateUpdate(Camera& cam)
 {
 
 }
 
-//called in Application.cpp loop
-void Menustate::render(Renderer& renderer)
+void Worldstate::render(Renderer& renderer)
 {		
 	for (auto& obj : m_gameObjects)
 	{
@@ -74,4 +60,3 @@ void Menustate::render(Renderer& renderer)
 		renderer.drawObject(obj);
 	}
 }
-

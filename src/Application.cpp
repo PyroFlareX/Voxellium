@@ -85,13 +85,13 @@ void Application::RunLoop()
 		current.update(dt);
 
 
-		current.lateUpdate(&m_camera);
+		current.lateUpdate(m_camera);
 		m_camera.update();
 		jobSystem.wait();
 
 
 		/// Draw objects from gamestate
-		current.render(m_renderer);
+		current.render(*m_renderer);
 		jobSystem.wait();
 
 		/// Render

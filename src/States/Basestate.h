@@ -14,10 +14,9 @@ public:
 
     virtual bool input(float dt) = 0;
     virtual void update(float dt) = 0;
-	virtual void lateUpdate(Camera* cam) = 0;
+	virtual void lateUpdate(Camera& cam) = 0;
 
-
-	virtual void render(Renderer* renderer) = 0;
+	virtual void render(Renderer& renderer) = 0;
 
 	virtual PlayerController& getPlayer() = 0;
 

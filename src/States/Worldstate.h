@@ -1,5 +1,4 @@
-#ifndef Menustate_H
-#define Menustate_H
+#pragma once
 
 #include "Basestate.h"
 
@@ -7,10 +6,10 @@
 #include <Engine.h>
 #include "../Controllers/PlayerController.h"
 
-class Menustate : public Basestate
+class Worldstate : public Basestate
 {
 public:
-    Menustate(Application& app);
+    Worldstate(Application& app);
 
 	void createObject(bs::Transform& t, const std::string& name);
 	void removeObject(const std::string& name);
@@ -22,7 +21,8 @@ public:
 
 	PlayerController& getPlayer() override;
 
-    ~Menustate() override;
+    ~Worldstate() override;
+	
 private:
 
 	std::vector<bs::GameObject> m_gameObjects;
@@ -30,5 +30,3 @@ private:
 	
 	Input::Inputs vInput;
 };
-
-#endif // Menustate_H
