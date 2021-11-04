@@ -6,6 +6,8 @@
 #include <Engine.h>
 #include "../Controllers/PlayerController.h"
 
+#include "../World/World.h"
+
 class Worldstate : public Basestate
 {
 public:
@@ -29,4 +31,6 @@ private:
 	PlayerController m_player;
 	
 	Input::Inputs vInput;
+
+	World m_world;
 };

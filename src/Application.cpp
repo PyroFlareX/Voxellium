@@ -97,7 +97,7 @@ void Application::RunLoop()
 		/// Render
 		m_renderer->render(m_camera);
 
-
+		/// Submitting the data to the GPU and actually drawing/updating display
 		m_renderer->finish(framebufdata[0], frames % framebufdata[0].handle.size());
 		jobSystem.wait();
 		m_context->update();
