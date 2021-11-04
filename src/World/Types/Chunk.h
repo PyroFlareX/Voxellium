@@ -11,7 +11,7 @@ constexpr auto CHUNK_VOLUME = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 class Chunk
 {
 public:
-	Chunk(const pos_xyz& pos);
+	Chunk(pos_xyz pos);
 
 	//Get the block id for the block at the given position
 	block_t getBlockAt(const pos_xyz& local_position) const;
@@ -33,7 +33,7 @@ private:
 
 	/// Functions
 	//Checks whether empty
-	bool checkIfEmpty() noexcept;
+	bool checkIfEmpty() const noexcept;
 	//Returns whether the chunk needs a mesh built
 	bool needsMesh() const noexcept;
 };

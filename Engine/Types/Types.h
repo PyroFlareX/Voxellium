@@ -467,7 +467,7 @@ namespace std
 	template<>
 	struct hash<bs::vec3>
 	{
-		size_t operator()(bs::vec3& vect) const noexcept
+		size_t operator()(const bs::vec3& vect) const noexcept
 		{
 			std::hash<decltype(vect.x)> hasher;
 
@@ -476,21 +476,6 @@ namespace std
 			auto hash3 = hasher(vect.z);
 
 			return std::hash<decltype(vect.x)>{}((hash1 ^ (hash2 << hash3) ^ hash3));
-		}
-	};
-	
-	template<>
-	struct hash<bs::vec3i>
-	{
-		size_t operator()(bs::vec3i& vec) const noexcept
-		{
-			std::hash<decltype(vec.x)> hasher;
-
-			auto hash1 = hasher(vec.x);
-			auto hash2 = hasher(vec.y);
-			auto hash3 = hasher(vec.z);
-
-			return std::hash<decltype(vec.x)>{}((hash1 ^ (hash2 << hash3) ^ hash3));
 		}
 	};
 }

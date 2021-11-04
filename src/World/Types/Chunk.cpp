@@ -21,11 +21,11 @@ constexpr static inline auto toIndex(u32 x, u32 y, u32 z) noexcept
 	return x + (y * CHUNK_SIZE) + (z * CHUNK_AREA);
 }
 
-Chunk::Chunk(const pos_xyz& pos)	:	m_pos(pos), m_has_mesh(false), m_needs_mesh(true), m_empty(false)
-{
-	constexpr block_t air_id = 0;
-	m_chunk_layout.fill(air_id);
+constexpr block_t air_id = 0;
 
+Chunk::Chunk(pos_xyz pos)	:	m_chunk_layout({air_id}), m_pos(pos), m_has_mesh(false), m_needs_mesh(true), m_empty(true)
+{
+	//m_chunk_layout.fill(air_id);
 	//Above is same as this:
 	/*for(auto z = 0; z < 16; ++z)
 	{
@@ -41,7 +41,7 @@ Chunk::Chunk(const pos_xyz& pos)	:	m_pos(pos), m_has_mesh(false), m_needs_mesh(t
 		}	
 	}*/
 
-	checkIfEmpty();
+	m_empty = checkIfEmpty();
 }
 
 block_t Chunk::getBlockAt(const pos_xyz& local_position) const
@@ -56,19 +56,16 @@ block_t& Chunk::getBlockAt(const pos_xyz& local_position)
 	return m_chunk_layout.at(toIndex(local_position));
 }
 
-bool Chunk::checkIfEmpty() noexcept
+bool Chunk::checkIfEmpty() const noexcept
 {
-	constexpr block_t air_id = 0;
 	for(const auto block_id : m_chunk_layout)
 	{
 		if(block_id != air_id)
 		{
-			m_empty = false;
-			return false;
+			return true;
 		}
 	}
-	m_empty = true;
-	return true;
+	return false;
 }
 
 bool Chunk::needsMesh() const noexcept
