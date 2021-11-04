@@ -4,7 +4,6 @@
 
 #include "../Application.h"
 #include <Engine.h>
-#include "../Controllers/PlayerController.h"
 
 #include "../World/World.h"
 
@@ -21,14 +20,10 @@ public:
 	void lateUpdate(Camera& cam) override;
 	void render(Renderer& renderer) override;
 
-	PlayerController& getPlayer() override;
-
     ~Worldstate() override;
 	
 private:
-
 	std::vector<bs::GameObject> m_gameObjects;
-	PlayerController m_player;
 	
 	Input::Inputs vInput;
 

@@ -4,29 +4,23 @@
 #include "../Camera.h"
 #include "Controller.h"
 
-class PlayerController //: public bs::Transform //: public Controller
+class PlayerController
 {
 public:
     PlayerController();
-
-    void update(float deltatime);
+    ~PlayerController() = default;
 
     void getInput(Input::Inputs inputs);
+
+    void update(float deltatime);
 
     Camera& getCurrentCamera();
 
     bs::Transform& getTransform();
 
-    short country = 0;
-
-    ~PlayerController();
 private:
-	Camera debugCamera;
 	Camera gameCamera;
 
-    // set 0 for debugcamera, set 1 for gamecamera
-    int currentCamera = 1;
-    bool fixedMapFlag = false;
     bs::Transform transform;
     
     bs::vec3 velocity;

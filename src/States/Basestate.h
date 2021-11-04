@@ -18,12 +18,15 @@ public:
 
 	virtual void render(Renderer& renderer) = 0;
 
-	virtual PlayerController& getPlayer() = 0;
+	PlayerController& getPlayer()
+	{
+		return player_controller;
+	}
 
     virtual ~Basestate() = default;
 protected:
 	Application& app;
-	PlayerController pcontroller;
+	PlayerController player_controller;
 };
 
 

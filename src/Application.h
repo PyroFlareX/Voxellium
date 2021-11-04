@@ -7,7 +7,6 @@
 
 #include <Engine.h>
 #include "Renderers/Renderer.h"
-#include "Camera.h"
 #include "States/Basestate.h"
 
 
@@ -39,10 +38,6 @@ public:
 
     void popState();
     void handleEvents();
-	// Camera& getCam() 
-	// {
-	// 	return m_camera;
-	// }
 	
 	void requestClose()
 	{
@@ -60,7 +55,6 @@ private:
 	// Device Context
 	bs::Device* m_device;
 
-	//Camera m_camera;
     std::vector<std::unique_ptr<Basestate>> m_states;
 	Renderer* m_renderer;
 	

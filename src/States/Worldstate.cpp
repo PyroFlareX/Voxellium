@@ -11,11 +11,6 @@ Worldstate::~Worldstate()
 
 }
 
-PlayerController& Worldstate::getPlayer() 
-{
-	return m_player;
-}
-
 bool Worldstate::input(float dt)
 {
 	ImGui::NewFrame();

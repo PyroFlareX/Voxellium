@@ -12,11 +12,6 @@ Menustate::~Menustate()
 
 }
 
-PlayerController& Menustate::getPlayer() 
-{
-	return m_player;
-}
-
 bool Menustate::input(float dt)
 {
 	ImGui::NewFrame();
