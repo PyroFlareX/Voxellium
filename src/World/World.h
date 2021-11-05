@@ -15,12 +15,12 @@ public:
 	void setBlockAt(const pos_xyz& world_pos, block_t block) noexcept;
 
 	const Chunk& getChunkAt(const pos_xyz& chunk_coords_pos) const noexcept;
-	Chunk& getChunkAt(const pos_xyz& chunk_coords_pos) noexcept;
+	Chunk& getChunkAt(const pos_xyz& chunk_coords_pos);
 
-	
+
 
 private:
 	using ChunkMap = std::unordered_map<pos_xyz, Chunk>;
 
-	ChunkMap& m_baseWorld;
+	std::shared_ptr<ChunkMap> m_baseWorld;
 };
