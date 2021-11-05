@@ -6,6 +6,8 @@ constexpr auto CHUNK_AREA = CHUNK_SIZE * CHUNK_SIZE;
 constexpr auto CHUNK_VOLUME = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 #include <array>
+#include <optional>
+#include <Resources/Mesh.h>
 
 #include <Types/BaseInheritables.h>
 #include "AliasTypes.h"
@@ -32,6 +34,14 @@ public:
 	//Set the flag so that only one remesh on this is active
 	void setRemeshingFlag();
 
+	using chunk_mesh_t = std::optional<bs::Mesh>;
+
+	//to reset the mesh for the chunk
+	void setMesh(bs::Mesh&& new_mesh);
+	
+	const chunk_mesh_t& getChunkMesh() const;
+
+
 private:
 	/// Members
 	//Array of block ids, to store the data for the chunk
@@ -43,6 +53,7 @@ private:
 	//Whether the chunk has a mesh
 	// @TODO: Change this to an optional with the mesh
 	bool m_has_mesh;
+	chunk_mesh_t m_mesh;
 	
 	//Set when the chunk needs to be updated too (?)
 	//Whether the chunk wants a new mesh built

@@ -192,9 +192,12 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 					//Add right face
 					makeFace(chunkMesh, RIGHT, right);
 				}
-			}
-		}
-	}
+			}	//x
+		}	//y
+	}	//z
+
+	//Now for the mesh to go to the owning chunk
+	chunk.setMesh(std::move(chunkMesh));
 }
 
 constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept

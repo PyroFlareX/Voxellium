@@ -2,6 +2,8 @@
 
 #include <Engine.h>
 
+#include "Meshing/ChunkMesher.h"
+
 //Filler chunk, TEMP, REMOVE LATER
 const Chunk basic_chunk({0, 0, 0});
 

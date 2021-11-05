@@ -23,7 +23,7 @@ constexpr static inline auto toIndex(u32 x, u32 y, u32 z) noexcept
 
 constexpr block_t air_id = 0;
 
-Chunk::Chunk(pos_xyz pos)	:	m_pos(pos), m_has_mesh(false), m_needs_mesh(true), m_empty(true)
+Chunk::Chunk(pos_xyz pos)	:	m_pos(pos), m_has_mesh(false), m_needs_mesh(true), m_empty(true), m_mesh({})
 {
 	m_chunk_layout.fill(air_id);
 	//Above is same as this:
@@ -95,4 +95,14 @@ void Chunk::setRemeshingFlag()
 {
 	m_needs_mesh = false;
 	m_empty = checkIfEmpty();
+}
+
+void Chunk::setMesh(bs::Mesh&& new_mesh)
+{
+	m_mesh.emplace(std::forward<bs::Mesh>(new_mesh));
+}
+	
+const Chunk::chunk_mesh_t& Chunk::getChunkMesh() const
+{
+	return m_mesh;
 }
