@@ -41,6 +41,9 @@ void Worldstate::update(float dt)
 		}
 	}
 
+	//Input
+	getPlayer().update(dt);
+
 	//Chunk update list
 	const auto worldmap = m_world.getWorldMap();
 	auto* world = &m_world;
@@ -57,10 +60,15 @@ void Worldstate::update(float dt)
 			{
 				auto* w = world;
 				generateMeshFor(*w, chunk_pos);
-				std::cout << "Generated Mesh!\n";
+				//std::cout << "Generated Mesh!\n";
 				
-				bs::vk::Model chunkModel(w->getChunkAt(chunk_pos).getChunkMesh().value_or(bs::Mesh()),
-										bs::asset_manager->getTextureMutable(0).getDevice());
+				const auto& m = w->getChunkAt(chunk_pos).getChunkMesh();
+				if(!m.has_value())
+				{
+					return;
+				}
+
+				bs::vk::Model chunkModel(*m, bs::asset_manager->getTextureMutable(0).getDevice());
 
 				std::string modelname("chunk_" + 
 							std::to_string(chunk_pos.x) + 

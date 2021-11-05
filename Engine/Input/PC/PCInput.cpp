@@ -178,22 +178,6 @@ namespace Input
 		
 		}
 
-		if(!enableCursor)
-		{
-			glfwGetCursorPos(window, &x, &y);
-			glfwSetCursorPos(window, 0, 0);
-			input.mouseUD -= y;
-			input.mouseLR += x;
-			
-			input.mouseUD = io.MouseDelta.y;
-			input.mouseLR = io.MouseDelta.x;
-			
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		}
-		else
-		{
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		}
 
 		if(io.WantCaptureKeyboard)
 		{
@@ -247,6 +231,23 @@ namespace Input
 		else
 		{
 			io.KeyAlt = false;
+		}
+
+		if(!enableCursor)
+		{
+			glfwGetCursorPos(window, &x, &y);
+			//glfwSetCursorPos(window, 0, 0);
+			input.mouseUD -= y;
+			input.mouseLR += x;
+			
+			/*input.mouseUD = -io.MouseDelta.y;
+			input.mouseLR = io.MouseDelta.x;*/
+			
+			//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}
+		else
+		{
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
 
 		

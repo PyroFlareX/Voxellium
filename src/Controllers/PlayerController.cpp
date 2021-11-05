@@ -12,6 +12,8 @@ PlayerController::PlayerController()
 
 void PlayerController::getInput(Input::Inputs vInput)
 {
+	auto& io = ImGui::GetIO();
+
 	bs::vec3 change = glm::vec3(0.0f);
 	float speed = 50.0f;
 
@@ -53,8 +55,11 @@ void PlayerController::getInput(Input::Inputs vInput)
 	velocity += change;
 
 	//mouse movement
-	transform.rot.x -= vInput.mouseUD * 0.05f;
-	transform.rot.y += vInput.mouseLR * 0.05f;
+	//transform.rot.x -= vInput.mouseUD * 0.05f;
+	//transform.rot.y += vInput.mouseLR * 0.05f;
+
+	transform.rot.x = io.MouseDelta.y * 0.05f;
+	transform.rot.y = io.MouseDelta.x * 0.05f;
 }
 
 Camera& PlayerController::getCurrentCamera() 
@@ -78,7 +83,5 @@ void PlayerController::update(float dt)
 {
 	transform.pos += velocity * dt;
 	velocity = bs::vec3(0.0f);
-
-	
 }
 
