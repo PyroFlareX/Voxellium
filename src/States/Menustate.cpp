@@ -4,23 +4,24 @@
 
 Menustate::Menustate(Application& app) : Basestate(app)
 {
-	
+	m_camtransform.pos = {0.0f, 0.0f, 0.0f};
+	m_camtransform.rot = {0.0f, 0.0f, 0.0f};
+	m_camtransform.scale = {0.0f, 0.0f, 0.0f};
+	m_camtransform.origin = {0.0f, 0.0f, 0.0f};
 }
 
 Menustate::~Menustate()
 {
-
+	app.getCamera().follow(app.getCamera());
 }
 
-bool Menustate::input(float dt)
+void Menustate::input(float dt)
 {
 	ImGui::NewFrame();
 	vInput = Input::getInput(dt);
 	auto& io = ImGui::GetIO();
 
-	return false;
 }
-
 
 void Menustate::update(float dt)
 {
@@ -57,7 +58,7 @@ void Menustate::update(float dt)
 
 void Menustate::lateUpdate(Camera& cam)
 {
-
+	cam.follow(m_camtransform);
 }
 
 //called in Application.cpp loop

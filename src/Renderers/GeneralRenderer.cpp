@@ -33,7 +33,7 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass* rpass, Vk
 	}*/
 
 	//Renderlists for secondary cmd buffers
-	m_renderlist.resize(2);
+	m_renderlist.resize(10);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

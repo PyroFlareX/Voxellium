@@ -28,20 +28,20 @@ namespace bs
 
 		void addImg(bs::Image& img, std::string&& id) noexcept;
 
-		const bs::vk::Texture& getTexture(short&& id);
+		const bs::vk::Texture& getTexture(short id) const;
 
-		bs::vk::Texture& getTextureMutable(short&& id);
+		bs::vk::Texture& getTextureMutable(short id);
 
 		size_t getNumTextures() noexcept;
 		
 		//List of textures for pushing data to the gpu
 		const std::vector<bs::vk::texture_t>& getTextures();
 
-		bs::vk::Model& getModel(std::string&& id);
+		bs::vk::Model& getModel(const std::string& id);
 
-		bs::vk::Buffer* getBuffer(std::string&& id);
+		bs::vk::Buffer* getBuffer(const std::string& id);
 
-		bs::Image& getImage(std::string&& id);
+		bs::Image& getImage(const std::string& id);
 
 		
 		//Store globally necessary pointers
@@ -55,7 +55,7 @@ namespace bs
 		ResourceManager<bs::Image> m_images;
 		ResourceManager<bs::Mesh> m_meshes;
 
-		ResourceManager<bs::vk::Texture, short> m_textures;
+		ResourceMap<bs::vk::Texture> m_textures;	//Ordered Map
 		ResourceManager<bs::vk::Model> m_models;
 		ResourceManager<bs::Material> m_materials;
 		ResourceManager<std::shared_ptr<bs::vk::Buffer>> m_buffers;

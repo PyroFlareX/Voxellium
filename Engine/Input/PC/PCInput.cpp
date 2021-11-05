@@ -54,12 +54,10 @@ namespace Input
 	void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	{
 		//input.zoom = xoffset; horizontal scrollwheel which doesnt exist lmao
-
 		auto& io = ImGui::GetIO();
 		
 		io.MouseWheel = yoffset;
 		io.MouseWheelH = xoffset;
-
 	}
 
 	void mouse_callback(GLFWwindow* window, int button, int action, int modifier) 
@@ -73,10 +71,12 @@ namespace Input
 		{
 			if (action == 1) 
 			{
-				if (!input.oneclick) {
+				if (!input.oneclick) 
+				{
 					input.oneclick = true;
 				}
-				else {
+				else 
+				{
 					input.oneclick = false;
 				}
 				input.mouse1 = true;

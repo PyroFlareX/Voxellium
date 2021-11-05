@@ -3,56 +3,48 @@
 
 Worldstate::Worldstate(Application& app) : Basestate(app)
 {
-
+	m_playerView.pos = {0.0f, 0.0f, 0.0f};
+	m_playerView.rot = {0.0f, 0.0f, 0.0f};
+	m_playerView.scale = {0.0f, 0.0f, 0.0f};
+	m_playerView.origin = {0.0f, 0.0f, 0.0f};
 }
 
 Worldstate::~Worldstate()
 {
-
+	app.getCamera().follow(app.getCamera());
 }
 
-bool Worldstate::input(float dt)
+void Worldstate::input(float dt)
 {
 	ImGui::NewFrame();
 	vInput = Input::getInput(dt);
 	const auto& io = ImGui::GetIO();
 
-	getPlayer().getInput(vInput);
+	const float movementSpeed = 5.0f;
 	
-	return false;
 }
 
 void Worldstate::update(float dt)
 {
-	static uint8_t menuIndex = 1;
-	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
+	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
 
-	switch(menuIndex)
+	if(ImGui::Begin("Main Menu", nullptr, windowflag))
 	{
-		case 1:
-		{
-			
-			break;
-		}
-		case 2:
-		{
-			
-			break;
-		}
+		const auto& cam = app.getCamera();
+		ImGui::Text("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
+		ImGui::Text("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
 	}
 
-	//Input
-	getPlayer().update(dt);
+	ImGui::End();
 
 	//Chunk update list
-	const auto worldmap = m_world.getWorldMap();
 	auto* world = &m_world;
-	for(const auto& [chunk_pos, chunk] : *worldmap)
+	for(const auto& [chunk_pos, chunk] : *m_world.getWorldMap())
 	{
-		/*if(chunk.isEmpty())
+		if(chunk.isEmpty())
 		{
 			continue;
-		}*/
+		}
 
 		if(chunk.needsMesh())
 		{
@@ -71,9 +63,9 @@ void Worldstate::update(float dt)
 				bs::vk::Model chunkModel(*m, bs::asset_manager->getTextureMutable(0).getDevice());
 
 				std::string modelname("chunk_" + 
-							std::to_string(chunk_pos.x) + 
-							std::to_string(chunk_pos.y) + 
-							std::to_string(chunk_pos.z));
+					std::to_string(chunk_pos.x) + 
+					std::to_string(chunk_pos.y) + 
+					std::to_string(chunk_pos.z));
 				bs::asset_manager->addModel(chunkModel, std::move(modelname));
 			});
 			jobSystem.schedule(makeChunkMesh, false);
@@ -83,7 +75,7 @@ void Worldstate::update(float dt)
 
 void Worldstate::lateUpdate(Camera& cam)
 {
-	
+	cam.follow(m_playerView);
 }
 
 void Worldstate::render(Renderer& renderer)
@@ -94,32 +86,23 @@ void Worldstate::render(Renderer& renderer)
 		renderer.drawObject(obj);
 	}
 
-	//Add the chunks to be rendered to a list
-	//for(int z = 0; z < 2; z+=1)
+	static bool ran = false;
+	const pos_xyz chunk_pos(0, 0, 0);
+	if(m_world.getChunkAt(chunk_pos).getChunkMesh().has_value() && !ran)
 	{
-		//for(int y = 0; y < 2; y+=1)
-		{
-			//for(int x = 0; x < 2; x+=1)
-			{
-				//const pos_xyz chunk_pos(x, y, z);
-				const pos_xyz chunk_pos(0, 0, 0);
+		bs::Transform t;
+		t.pos = chunk_pos * CHUNK_SIZE;
+		std::string modelname("chunk_" + 
+			std::to_string(chunk_pos.x) + 
+			std::to_string(chunk_pos.y) + 
+			std::to_string(chunk_pos.z));
 
-				if(m_world.getChunkAt(chunk_pos).getChunkMesh().has_value())
-				{
-					const pos_xyz world_pos = chunk_pos * CHUNK_SIZE;
-					bs::Transform t;
-					t.pos = world_pos;
+		bs::GameObject chunk(t, modelname);
 
-					std::string modelname("chunk_" + 
-						std::to_string(chunk_pos.x) + 
-						std::to_string(chunk_pos.y) + 
-						std::to_string(chunk_pos.z));
+		m_gameObjects.emplace_back(chunk);
 
-					bs::GameObject chunk(t, modelname);
-					renderer.drawObject(chunk);
-				}
+		std::cout << "Added chunk at (0,0,0)\n";
 
-			}
-		}
+		ran = true;
 	}
 }

@@ -10,7 +10,8 @@ namespace bs
 {
 	template <typename T, typename keytype = std::string>
 	class ResourceManager
-	{
+	{	
+		using MapType = std::unordered_map<keytype, T>;
 	public:
 		ResourceManager() = default;
 		~ResourceManager() = default;
@@ -26,6 +27,22 @@ namespace bs
 			return m_assetMap.contains(key);
 		}
 
+		T& getAsset(const keytype& key)
+		{
+			std::lock_guard<std::mutex> mutguard(m_lock);
+			const auto searched = m_assetMap.find(key);
+			if(searched != m_assetMap.end())
+			{
+				return searched->second;
+			}
+			else
+			{
+				puts("Tried to retrieve an asset that does not exist!\n");
+				std::cout << "Type of asset is: " << typeid(T).name() << " | and the value of the key is: " << key << "\n";
+				throw;
+			}
+		}
+
 		T& getAsset(keytype&& key)
 		{
 			std::lock_guard<std::mutex> mutguard(m_lock);
@@ -37,27 +54,39 @@ namespace bs
 			{
 				// error!!!
 				puts("Tried to retrieve an asset that does not exist!\n");
-				
 				std::cout << "Type of asset is: " << typeid(T).name() << " | and the value of the key is: " << key << "\n";
 				throw;
 			}   
 		}
 
-		const T& getAsset(keytype&& key) const
-		{
-			//std::lock_guard<std::mutex> mutguard(m_lock);
-			if(doesAssetExist(std::forward<keytype>(key)))
+		const T& getAsset(const keytype& key) const
+		{	
+			const auto searched = m_assetMap.find(key);
+			if(searched != m_assetMap.end())
 			{
-				return m_assetMap.at(key);
+				return searched->second;
 			}
 			else
 			{
-				// error!!!
 				puts("Tried to retrieve an asset that does not exist!\n");
-				
 				std::cout << "Type of asset is: " << typeid(T).name() << " | and the value of the key is: " << key << "\n";
 				throw;
-			}   
+			}
+		}
+
+		const T& getAsset(keytype&& key) const
+		{
+			const auto searched = m_assetMap.find(key);
+			if(searched != m_assetMap.end())
+			{
+				return searched->second;
+			}
+			else
+			{
+				puts("Tried to retrieve an asset that does not exist!\n");
+				std::cout << "Type of asset is: " << typeid(T).name() << " | and the value of the key is: " << key << "\n";
+				throw;
+			}
 		}
 
 		void removeAsset(keytype&& key)
@@ -66,24 +95,25 @@ namespace bs
 			m_assetMap.erase(key);
 		}
 
-		std::unordered_map<keytype, T>& getMap() noexcept
+		MapType& getMap() noexcept
 		{
 			return m_assetMap;
 		}
 
-		const std::unordered_map<keytype, T>& getMap() const noexcept
+		const MapType& getMap() const noexcept
 		{
 			return m_assetMap;
 		}
 
 	private:
-		std::unordered_map<keytype, T> m_assetMap;
+		MapType m_assetMap;
 		std::mutex m_lock;
 	};
 
 	template <typename T, typename keytype = short>
 	class ResourceMap
 	{
+		using MapType = std::map<keytype, T>;
 	public:
 		ResourceMap() = default;
 		~ResourceMap() = default;
@@ -139,18 +169,18 @@ namespace bs
 			m_assetMap.erase(key);
 		}
 
-		std::map<keytype, T>& getMap() noexcept
+		MapType& getMap() noexcept
 		{
 			return m_assetMap;
 		}
 
-		const std::map<keytype, T>& getMap() const noexcept
+		const MapType& getMap() const noexcept
 		{
 			return m_assetMap;
 		}
 
 	private:
-		std::map<keytype, T> m_assetMap;
+		MapType m_assetMap;
 		std::mutex m_lock;
 	};
 }

@@ -28,6 +28,11 @@ Application::~Application()
 	delete m_context;
 }
 
+Camera& Application::getCamera()
+{
+	return m_camera;
+}
+
 void Application::RunLoop()
 {
 	//Initial Utilities Setup
@@ -70,7 +75,6 @@ void Application::RunLoop()
 		dt = static_cast<float>(clock.restart());
 		auto& io = ImGui::GetIO();
 		auto& current = *currentState().get();
-		Camera& m_camera = current.getPlayer().getCurrentCamera();
 
 		///Main Loop, do cycle of Input, Update, Draw, Render & Swap Buffers, Handle Events
 		
@@ -113,8 +117,8 @@ void Application::RunLoop()
 			
 			std::cout << frames << " per sec\n";
 
-			printf("Player Pos: X:%0.3f, Y:%0.f, Z:%0.3f\n", m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
-			printf("Player Rot: X:%0.3f, Y:%0.f, Z:%0.3f\n", m_camera.rot.x, m_camera.rot.y, m_camera.rot.z);
+			printf("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
+			printf("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.rot.x, m_camera.rot.y, m_camera.rot.z);
 			//std::cout << dt * 1000 << " ms\n";
 			t = 0;
 			frames = 0;

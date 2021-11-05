@@ -8,6 +8,8 @@ Camera::Camera()
 	proj = glm::perspective(glm::radians(80.0f), (float)bs::vk::viewportwidth / (float)bs::vk::viewportheight, 0.001f, 1000000.0f);
 	pos = bs::vec3(0.0f, 0.0f, 1.0f);
 	rot = bs::vec3(0.0f);
+
+	follow(*this);
 }
 
 bs::mat4 Camera::getViewMatrix() const
@@ -54,8 +56,8 @@ void Camera::update()
 	if (rot.x > 90.0f) { rot.x = 89.9f; }
 	if (rot.x < -90.0f) { rot.x = -89.9f; }
 
-	if (rot.y > 180.0f) { rot.y = -180.0f; }
-	if (rot.y < -180.0f) { rot.y = 180.0f; }
+	if (rot.y > 180.0f) { rot.y = 179.9f; }
+	if (rot.y < -180.0f) { rot.y = -179.9f; }
 
 	entityPos->rot = rot;
 }

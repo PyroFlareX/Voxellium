@@ -3,12 +3,12 @@
 
 #include <vector>
 #include <memory>
-#include <iostream>
 
-#include <Engine.h>
+#include <GPU/Context.h>
+
 #include "Renderers/Renderer.h"
 #include "States/Basestate.h"
-
+#include "Camera.h"
 
 class Application
 {
@@ -18,6 +18,9 @@ public:
 
 	//Main loop
     void RunLoop();
+
+	//Get the camera
+	Camera& getCamera();
 
     //State Stuff
 
@@ -54,6 +57,8 @@ private:
 	bs::vk::FramebufferData framebufdata[2];
 	// Device Context
 	bs::Device* m_device;
+	//Camera
+	Camera m_camera;
 
     std::vector<std::unique_ptr<Basestate>> m_states;
 	Renderer* m_renderer;

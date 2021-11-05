@@ -30,12 +30,12 @@ namespace bs
 		m_images.addAsset(img, id);
 	}
 
-	const bs::vk::Texture& AssetManager::getTexture(short&& id)
+	const bs::vk::Texture& AssetManager::getTexture(short id) const
 	{
 		return m_textures.getAsset(std::forward<short>(id));
 	}
 
-	bs::vk::Texture& AssetManager::getTextureMutable(short&& id)
+	bs::vk::Texture& AssetManager::getTextureMutable(short id)
 	{
 		return m_textures.getAsset(std::forward<short>(id));
 	}
@@ -49,42 +49,28 @@ namespace bs
 	const std::vector<bs::vk::texture_t>& AssetManager::getTextures()
 	{
 		static std::vector<bs::vk::texture_t> textures;
-		static bool ran = false;
-		if(!ran)
-		{
-			textures.reserve(m_textures.getMap().size());
-			for(auto& [key, value] : m_textures.getMap())
-			{
-				textures.emplace_back(value.getAPITextureInfo());
-			}
-			
-			ran = true;
-		}
+		textures.clear();
 
-		/// OR ALTERNATIVE IMPL:
-		/*
-		textures.resize(getNumTextures());
-		for(auto& [key, value] : m_textures.getMap())
+		for(const auto& [key, value] : m_textures.getMap())
 		{
-			textures[key] = value.getAPITextureInfo();
+			textures.emplace_back(value.getAPITextureInfo());
 		}
-		*/
 
 		return textures;
 	}
 
-	bs::vk::Model& AssetManager::getModel(std::string&& id)
+	bs::vk::Model& AssetManager::getModel(const std::string& id)
 	{
-		return m_models.getAsset(std::forward<std::string>(id));
+		return m_models.getAsset(id);
 	}
 
-	bs::vk::Buffer* AssetManager::getBuffer(std::string&& id)
+	bs::vk::Buffer* AssetManager::getBuffer(const std::string& id)
 	{
-		return m_buffers.getAsset(std::forward<std::string>(id)).get();
+		return m_buffers.getAsset(id).get();
 	}
 
-	bs::Image& AssetManager::getImage(std::string&& id)
+	bs::Image& AssetManager::getImage(const std::string& id)
 	{
-		return m_images.getAsset(std::forward<std::string>(id));
+		return m_images.getAsset(id);
 	}
 }
