@@ -5,10 +5,24 @@
 #include <Resources/Mesh.h>
 #include <memory>
 #include <array>
+#include <iostream>
+
+//Helper functions
+constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept;
+constexpr static inline pos_xyz fromIndex(u32 index) noexcept;
+
+static block_t getBlockAt(const pos_xyz& rel_to_chunk, const Chunk& chunk, const World& world);
+static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk);
+
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::vector<u32>& face);
+
+static inline bool tempisTransparent(block_t b)
+{
+	return (b == 0);
+}
 
 // List out the vertices, indicies, UV coords, etc for the models
 // for the blocks
-
 // In the future, maybe have this be on the GPU side, and use a compute shader?
 
 //Cube coords
@@ -16,7 +30,6 @@ const std::vector<bs::vec3> vertices =
 {
 	//8 vertices, one per corner
 	//Starting with 0,0,0 or left bottom front
-	
 	{0.0f, 0.0f, 0.0f},	//0
 	{1.0f, 0.0f, 0.0f},	//1
 	{1.0f, 1.0f, 0.0f},	//2
@@ -27,7 +40,6 @@ const std::vector<bs::vec3> vertices =
 	{0.0f, 1.0f, 1.0f}	//7		//8 total
 
 };
-
 //Cube faces
 //Outside is counter-clockwise
 const std::vector<u32> front
@@ -70,24 +82,10 @@ constexpr pos_xyz FRONT(0, 0, -1);
 constexpr pos_xyz BACK(0, 0, 1);
 constexpr pos_xyz NONE(0, 0, 0);
 
-//Helper functions
-constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept;
-constexpr static inline pos_xyz fromIndex(u32 index) noexcept;
-
-static block_t getBlockAt(const pos_xyz& rel_to_chunk, const Chunk& chunk, const World& world);
-static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk);
-
-static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::vector<u32>& face);
-
-static inline bool tempisTransparent(block_t b)
-{
-	return (b == 0);
-}
-
-
-
 void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 {
+	//std::cout << "Generating Mesh!\n";
+
 	auto& chunk = world.getChunkAt(chunk_coord);
 
 	if(chunk.isEmpty())
@@ -102,7 +100,6 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 	
 	//Locks this chunk mesh building to this caller
 	chunk.setRemeshingFlag();
-
 
 	/**	Algorithm layout:
 	 * For each block, check each block adjacent (6 sides) to see if it is transparent.
@@ -125,7 +122,6 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 	**/
 
 	bs::Mesh chunkMesh;
-
 	const bs::Vertex basicVert = 
 	{
 		.position = { 0.0f, 0.0f, 0.0f },
@@ -140,8 +136,6 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 			for(int x = 0; x < CHUNK_SIZE; ++x)
 			{
 				const pos_xyz coords(x, y, z);
-				// const pos_xyz worldCoords = (chunk_coord * CHUNK_SIZE) + coords;
-
 				const auto block = chunk.getBlockAt(coords);
 
 				//Check if transparent

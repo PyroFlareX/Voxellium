@@ -4,9 +4,11 @@
 #include <memory>
 
 #include "Types/Chunk.h"
+#include "Meshing/ChunkMesher.h"
 
 class World
 {
+	using ChunkMap = std::unordered_map<pos_xyz, Chunk>;
 public:
 	World();
 	~World();
@@ -18,9 +20,10 @@ public:
 	Chunk& getChunkAt(const pos_xyz& chunk_coords_pos);
 
 
-
+	std::shared_ptr<ChunkMap> getWorldMap()
+	{
+		return m_baseWorld;
+	}
 private:
-	using ChunkMap = std::unordered_map<pos_xyz, Chunk>;
-
 	std::shared_ptr<ChunkMap> m_baseWorld;
 };

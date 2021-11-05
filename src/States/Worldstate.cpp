@@ -3,7 +3,7 @@
 
 Worldstate::Worldstate(Application& app) : Basestate(app)
 {
-	
+
 }
 
 Worldstate::~Worldstate()
@@ -39,11 +39,33 @@ void Worldstate::update(float dt)
 			break;
 		}
 	}
+
+	//Chunk update list
+	const auto worldmap = m_world.getWorldMap();
+	auto* world = &m_world;
+	for(const auto& [chunk_pos, chunk] : *worldmap)
+	{
+		if(chunk.isEmpty())
+		{
+			continue;
+		}
+
+		if(chunk.needsMesh())
+		{
+			const auto makeChunkMesh = jobSystem.createJob([chunk_pos, world](Job j)
+			{
+				auto* w = world;
+				generateMeshFor(*w, chunk_pos);
+				std::cout << "Generated Mesh!\n";
+			});
+			jobSystem.schedule(makeChunkMesh, false);
+		}
+	}
 }
 
 void Worldstate::lateUpdate(Camera& cam)
 {
-
+	
 }
 
 void Worldstate::render(Renderer& renderer)
