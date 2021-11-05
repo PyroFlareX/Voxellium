@@ -23,7 +23,7 @@ namespace Input
 	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		auto& io = ImGui::GetIO();
-		if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
+		/*if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS) {
 			if (!input.tilda) {
 				input.tilda = true;
 				io.KeysDown['`'] = true;
@@ -32,8 +32,7 @@ namespace Input
 				input.tilda = false;
 				io.KeysDown['`'] = false;
 			}
-		}
-
+		}*/
 		if(key >= 0 && key < 512)
 		{
 			if(action == GLFW_PRESS)
@@ -164,20 +163,11 @@ namespace Input
 			io.MouseClicked[0] = true;
 			io.MouseClickedPos[0] = ImVec2(mX1, mY1);
 		}
-
-		/*if(updatemovement) 
-		{
-			int wh = 0, ww = 0;
-			glfwGetWindowSize(window, &ww, &wh);
-			input.mouseUD = float(mY2 - mY1) / float(wh);
-			input.mouseLR = float(mX2 - mX1) / float(ww);
-		}*/
 		
 		if(io.WantCaptureMouse)
 		{
 		
 		}
-
 
 		if(io.WantCaptureKeyboard)
 		{

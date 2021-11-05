@@ -20,15 +20,53 @@ void Worldstate::input(float dt)
 	vInput = Input::getInput(dt);
 	const auto& io = ImGui::GetIO();
 
-	const float movementSpeed = 5.0f;
+	constexpr auto W = GLFW_KEY_W;
+	constexpr auto A = GLFW_KEY_A;
+	constexpr auto S = GLFW_KEY_S;
+	constexpr auto D = GLFW_KEY_D;
+	constexpr auto UP = GLFW_KEY_SPACE;
+	const float movementSpeed = dt * 6.0f; // The literal is the units moved per second
+
+	//Input handling, modifying the transform
+	auto& pos = m_playerView.pos;
+	auto& rot = m_playerView.rot;
+	rot.z = 0.0f;
 	
+	//Forward - Backwards
+	if(io.KeysDown[W] ^ io.KeysDown[S])
+	{
+		const int dir = (io.KeysDown[W]) ? 1 : -1;
+		pos.x += -glm::cos(glm::radians(rot.y + 90)) * movementSpeed * dir;
+		pos.z += -glm::sin(glm::radians(rot.y + 90)) * movementSpeed * dir;
+	}
+	//Left - Right
+	if(io.KeysDown[A] ^ io.KeysDown[D])
+	{
+		const int dir = (io.KeysDown[D]) ? 1 : -1;
+		pos.x += glm::cos(glm::radians(rot.y)) * movementSpeed * dir;
+		pos.z += glm::sin(glm::radians(rot.y)) * movementSpeed * dir;
+	}
+	//Up
+	if(io.KeysDown[UP])
+	{
+		pos.y += movementSpeed;
+	}
+	//Down
+	if(io.KeyShift)
+	{
+		pos.y -= movementSpeed;
+	}
+
+	//For mouse controls
+	const auto& mouseChange = io.MouseDelta;
+	rot += bs::vec3(mouseChange.y, mouseChange.x, 0.0f);
 }
 
 void Worldstate::update(float dt)
 {
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
 
-	if(ImGui::Begin("Main Menu", nullptr, windowflag))
+	if(ImGui::Begin("Debug UI", nullptr, windowflag))
 	{
 		const auto& cam = app.getCamera();
 		ImGui::Text("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
