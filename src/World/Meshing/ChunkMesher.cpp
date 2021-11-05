@@ -11,7 +11,55 @@
 
 // In the future, maybe have this be on the GPU side, and use a compute shader?
 
-// std::vector<float> 
+//Cube coords
+const std::vector<bs::vec3> vertices =
+{
+	//8 vertices, one per corner
+	//Starting with 0,0,0 or left bottom front
+	
+	{0.0f, 0.0f, 0.0f},	//0
+	{1.0f, 0.0f, 0.0f},	//1
+	{1.0f, 1.0f, 0.0f},	//2
+	{0.0f, 1.0f, 0.0f},	//3
+	{0.0f, 0.0f, 1.0f},	//4
+	{1.0f, 0.0f, 1.0f},	//5
+	{1.0f, 1.0f, 1.0f},	//6
+	{0.0f, 1.0f, 1.0f}	//7		//8 total
+
+};
+
+//Cube faces
+//Outside is counter-clockwise
+const std::vector<u32> front
+{
+	0, 1, 2,
+	2, 3, 0
+};
+const std::vector<u32> back
+{
+	5, 4, 7,
+	7, 6, 5
+};
+const std::vector<u32> top
+{
+	7, 3, 2,
+	2, 6, 7
+};
+const std::vector<u32> bottom
+{
+	1, 0, 4,
+	4, 5, 1
+};
+const std::vector<u32> left
+{
+	0, 3, 7,
+	7, 4, 0
+};
+const std::vector<u32> right
+{
+	2, 1, 5,
+	5, 6, 2
+};
 
 // Some constants
 constexpr pos_xyz UP(0, 1, 0);
@@ -29,10 +77,32 @@ constexpr static inline pos_xyz fromIndex(u32 index) noexcept;
 static block_t getBlockAt(const pos_xyz& rel_to_chunk, const Chunk& chunk, const World& world);
 static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk);
 
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::vector<u32>& face);
+
+static inline bool tempisTransparent(block_t b)
+{
+	return (b == 0);
+}
+
+
 
 void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 {
 	auto& chunk = world.getChunkAt(chunk_coord);
+
+	if(chunk.isEmpty())
+	{
+		return;
+	}
+
+	if(!chunk.needsMesh())
+	{
+		return;
+	}
+	
+	//Locks this chunk mesh building to this caller
+	chunk.setRemeshingFlag();
+
 
 	/**	Algorithm layout:
 	 * For each block, check each block adjacent (6 sides) to see if it is transparent.
@@ -54,6 +124,15 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 	 * 
 	**/
 
+	bs::Mesh chunkMesh;
+
+	const bs::Vertex basicVert = 
+	{
+		.position = { 0.0f, 0.0f, 0.0f },
+		.normal = { 0.0f, 0.0f, 0.0f},
+		.uv = { 0.0f, 0.0f }
+	};
+
 	for(int z = 0; z < CHUNK_SIZE; ++z)
 	{
 		for(int y = 0; y < CHUNK_SIZE; ++y)
@@ -61,19 +140,58 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 			for(int x = 0; x < CHUNK_SIZE; ++x)
 			{
 				const pos_xyz coords(x, y, z);
-				auto block = chunk.getBlockAt(coords);
+				// const pos_xyz worldCoords = (chunk_coord * CHUNK_SIZE) + coords;
+
+				const auto block = chunk.getBlockAt(coords);
+
+				//Check if transparent
+				if(tempisTransparent(block))
+				{
+					continue;
+				}
 
 				//Check if each face should be rendered
 				//Get each adjacent block
-				auto blockUP = getBlockAt(coords + UP, chunk, world);
-				auto blockDOWN = getBlockAt(coords + DOWN, chunk, world);
-				auto blockLEFT = getBlockAt(coords + LEFT, chunk, world);
-				auto blockRIGHT = getBlockAt(coords + RIGHT, chunk, world);
-				auto blockFRONT = getBlockAt(coords + FRONT, chunk, world);
-				auto blockBACK = getBlockAt(coords + BACK, chunk, world);
+				const auto blockUP = getBlockAt(coords + UP, chunk, world);
+				const auto blockDOWN = getBlockAt(coords + DOWN, chunk, world);
+				const auto blockLEFT = getBlockAt(coords + LEFT, chunk, world);
+				const auto blockRIGHT = getBlockAt(coords + RIGHT, chunk, world);
+				const auto blockFRONT = getBlockAt(coords + FRONT, chunk, world);
+				const auto blockBACK = getBlockAt(coords + BACK, chunk, world);
 
 				//Check the blocks to the registry with the registry
 				//BlockDataRegistry
+				//Using this temp function for now to do it
+				if(tempisTransparent(blockUP))
+				{
+					//Add upper face
+					makeFace(chunkMesh, UP, top);
+				}
+				if(tempisTransparent(blockDOWN))
+				{
+					//Add lower face
+					makeFace(chunkMesh, DOWN, bottom);
+				}
+				if(tempisTransparent(blockFRONT))
+				{
+					//Add front face
+					makeFace(chunkMesh, FRONT, front);
+				}
+				if(tempisTransparent(blockBACK))
+				{
+					//Add back face
+					makeFace(chunkMesh, BACK, back);
+				}
+				if(tempisTransparent(blockLEFT))
+				{
+					//Add left face
+					makeFace(chunkMesh, LEFT, left);
+				}
+				if(tempisTransparent(blockRIGHT))
+				{
+					//Add right face
+					makeFace(chunkMesh, RIGHT, right);
+				}
 			}
 		}
 	}
@@ -132,5 +250,38 @@ static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk)
 	else
 	{
 		return NONE;
+	}
+}
+
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::vector<u32>& baked_face)
+{
+	constexpr bs::Vertex basicVert = 
+	{
+		.position = { 0.0f, 0.0f, 0.0f },
+		.normal = { 0.0f, 0.0f, 0.0f},
+		.uv = { 0.0f, 0.0f }
+	};
+
+	auto v1 = basicVert;
+	v1.normal = direction;
+	auto v2 = v1;
+	auto v3 = v1;
+	auto v4 = v1;
+
+	//Each pre-made index array magic nums: 0, 1, 2, 4
+	v1.position = vertices[baked_face[0]];
+	v2.position = vertices[baked_face[1]];
+	v3.position = vertices[baked_face[2]];
+	v4.position = vertices[baked_face[4]];
+	//Indexing
+	u32 currentIndex = chunkmesh.vertices.size();
+	chunkmesh.vertices.emplace_back(v1);
+	chunkmesh.vertices.emplace_back(v2);
+	chunkmesh.vertices.emplace_back(v3);
+	chunkmesh.vertices.emplace_back(v4);
+
+	for(const auto offsetBase : baked_face)
+	{
+		chunkmesh.indicies.emplace_back(offsetBase + currentIndex);
 	}
 }
