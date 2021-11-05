@@ -20,13 +20,14 @@ namespace bs
 	public:
 		AssetManager();
 
-		void addTexture(bs::vk::Texture& texture, short&& id) noexcept;
+		void addTexture(bs::vk::Texture& texture, short id) noexcept;
 
-		void addModel(bs::vk::Model& model, std::string&& id) noexcept;
+		void addModel(bs::vk::Model& model, const std::string& id) noexcept;
+		void addModel(bs::vk::Model&& model, const std::string& id) noexcept;
 
-		void addBuffer(bs::vk::Buffer* buffer, std::string&& id) noexcept;
+		void addBuffer(bs::vk::Buffer* buffer, const std::string& id) noexcept;
 
-		void addImg(bs::Image& img, std::string&& id) noexcept;
+		void addImg(bs::Image& img, const std::string& id) noexcept;
 
 		const bs::vk::Texture& getTexture(short id) const;
 

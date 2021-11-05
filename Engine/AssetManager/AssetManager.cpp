@@ -9,23 +9,28 @@ namespace bs
 
 	}
 
-	void AssetManager::addTexture(bs::vk::Texture& texture, short&& id) noexcept
+	void AssetManager::addTexture(bs::vk::Texture& texture, short id) noexcept
 	{
 		m_textures.addAsset(texture, id);
 	}
 
-	void AssetManager::addModel(bs::vk::Model& model, std::string&& id) noexcept
+	void AssetManager::addModel(bs::vk::Model& model, const std::string& id) noexcept
 	{
 		m_models.addAsset(model, id);
 	}
 
-	void AssetManager::addBuffer(bs::vk::Buffer* buffer, std::string&& id) noexcept
+	void AssetManager::addModel(bs::vk::Model&& model, const std::string& id) noexcept
+	{
+		m_models.addAsset(std::forward<bs::vk::Model>(model), id);
+	}
+
+	void AssetManager::addBuffer(bs::vk::Buffer* buffer, const std::string& id) noexcept
 	{
 		auto bufferptr = std::shared_ptr<bs::vk::Buffer>(buffer);
 		m_buffers.addAsset(bufferptr, id);
 	}
 
-	void AssetManager::addImg(bs::Image& img, std::string&& id) noexcept
+	void AssetManager::addImg(bs::Image& img, const std::string& id) noexcept
 	{
 		m_images.addAsset(img, id);
 	}

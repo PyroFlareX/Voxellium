@@ -1,8 +1,6 @@
-#ifndef BASESTATE_H
-#define BASESTATE_H
+#pragma once
 
 #include "../Renderers/Renderer.h"
-#include "../Controllers/PlayerController.h"
 
 class Application;
 class Camera;
@@ -23,5 +21,3 @@ protected:
 	Application& app;
 };
 
-
-#endif // BASESTATE_H

@@ -16,15 +16,26 @@ namespace bs
 		ResourceManager() = default;
 		~ResourceManager() = default;
 
-		void addAsset(T& a, keytype& key) noexcept
+		void addAsset(const T& a, const keytype& key) noexcept
 		{
 			std::lock_guard<std::mutex> mutguard(m_lock);
 			m_assetMap.emplace(key, a);
 		}
 
-		const bool doesAssetExist(keytype&& key) const noexcept
+		void addAsset(T&& a, const keytype& key) noexcept
+		{
+			std::lock_guard<std::mutex> mutguard(m_lock);
+			m_assetMap.emplace(key, std::forward<T>(a));
+		}
+
+		bool doesAssetExist(const keytype& key) const noexcept
 		{
 			return m_assetMap.contains(key);
+		}
+
+		bool doesAssetExist(keytype&& key) const noexcept
+		{
+			return m_assetMap.contains(std::forward<T>(key));
 		}
 
 		T& getAsset(const keytype& key)

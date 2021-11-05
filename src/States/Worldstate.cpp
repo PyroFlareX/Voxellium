@@ -26,12 +26,12 @@ void Worldstate::input(float dt)
 	constexpr auto D = GLFW_KEY_D;
 	constexpr auto UP = GLFW_KEY_SPACE;
 	const float movementSpeed = dt * 6.0f; // The literal is the units moved per second
+	const float mouseSensitivity = 0.7f;
 
 	//Input handling, modifying the transform
 	auto& pos = m_playerView.pos;
 	auto& rot = m_playerView.rot;
 	rot.z = 0.0f;
-	
 	//Forward - Backwards
 	if(io.KeysDown[W] ^ io.KeysDown[S])
 	{
@@ -56,23 +56,20 @@ void Worldstate::input(float dt)
 	{
 		pos.y -= movementSpeed;
 	}
-
 	//For mouse controls
 	const auto& mouseChange = io.MouseDelta;
-	rot += bs::vec3(mouseChange.y, mouseChange.x, 0.0f);
+	rot += bs::vec3(mouseChange.y, mouseChange.x, 0.0f) * mouseSensitivity;
 }
 
 void Worldstate::update(float dt)
 {
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
-
 	if(ImGui::Begin("Debug UI", nullptr, windowflag))
 	{
 		const auto& cam = app.getCamera();
 		ImGui::Text("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
 		ImGui::Text("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
 	}
-
 	ImGui::End();
 
 	//Chunk update list
@@ -90,21 +87,18 @@ void Worldstate::update(float dt)
 			{
 				auto* w = world;
 				generateMeshFor(*w, chunk_pos);
-				//std::cout << "Generated Mesh!\n";
 				
 				const auto& m = w->getChunkAt(chunk_pos).getChunkMesh();
 				if(!m.has_value())
 				{
 					return;
 				}
-
-				bs::vk::Model chunkModel(*m, bs::asset_manager->getTextureMutable(0).getDevice());
-
-				std::string modelname("chunk_" + 
+				
+				bs::asset_manager->addModel(bs::vk::Model(*m, bs::asset_manager->getTextureMutable(0).getDevice()),
+					std::string("chunk_" + 
 					std::to_string(chunk_pos.x) + 
 					std::to_string(chunk_pos.y) + 
-					std::to_string(chunk_pos.z));
-				bs::asset_manager->addModel(chunkModel, std::move(modelname));
+					std::to_string(chunk_pos.z)));
 			});
 			jobSystem.schedule(makeChunkMesh, false);
 		}

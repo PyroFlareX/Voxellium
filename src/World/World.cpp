@@ -89,8 +89,8 @@ const Chunk& World::getChunkAt(const pos_xyz& chunk_coords_pos) const noexcept
 
 Chunk& World::getChunkAt(const pos_xyz& chunk_coords_pos)
 {
-	return m_baseWorld->at(chunk_coords_pos);
-	/*
+	//return m_baseWorld->at(chunk_coords_pos);
+	
 	ChunkMap::iterator searching = m_baseWorld->find(chunk_coords_pos);
 	if(searching != m_baseWorld->end())
 	{
@@ -104,5 +104,10 @@ Chunk& World::getChunkAt(const pos_xyz& chunk_coords_pos)
 		//Return the newly generated chunk
 		auto newChunk = m_baseWorld->emplace(chunk_coords_pos, chunk_coords_pos);
 		return newChunk.first->second;
-	}*/
+	}
+}
+
+std::shared_ptr<World::ChunkMap> World::getWorldMap()
+{
+	return m_baseWorld;
 }
