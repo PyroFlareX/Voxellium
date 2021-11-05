@@ -12,9 +12,6 @@ PlayerController::PlayerController()
 
 void PlayerController::getInput(Input::Inputs vInput)
 {
-	auto& io = ImGui::GetIO();
-
-	
 	bs::vec3 change = glm::vec3(0.0f);
 	float speed = 50.0f;
 

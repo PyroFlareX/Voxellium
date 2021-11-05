@@ -15,11 +15,12 @@ bool Worldstate::input(float dt)
 {
 	ImGui::NewFrame();
 	vInput = Input::getInput(dt);
-	auto& io = ImGui::GetIO();
+	const auto& io = ImGui::GetIO();
+
+	getPlayer().getInput(vInput);
 	
 	return false;
 }
-
 
 void Worldstate::update(float dt)
 {
@@ -45,10 +46,10 @@ void Worldstate::update(float dt)
 	auto* world = &m_world;
 	for(const auto& [chunk_pos, chunk] : *worldmap)
 	{
-		if(chunk.isEmpty())
+		/*if(chunk.isEmpty())
 		{
 			continue;
-		}
+		}*/
 
 		if(chunk.needsMesh())
 		{
@@ -74,7 +75,7 @@ void Worldstate::update(float dt)
 
 void Worldstate::lateUpdate(Camera& cam)
 {
-	//Add the chunks to be rendered to a list
+	
 }
 
 void Worldstate::render(Renderer& renderer)
@@ -83,5 +84,34 @@ void Worldstate::render(Renderer& renderer)
 	{
 		obj.getCurrentTransform();
 		renderer.drawObject(obj);
+	}
+
+	//Add the chunks to be rendered to a list
+	//for(int z = 0; z < 2; z+=1)
+	{
+		//for(int y = 0; y < 2; y+=1)
+		{
+			//for(int x = 0; x < 2; x+=1)
+			{
+				//const pos_xyz chunk_pos(x, y, z);
+				const pos_xyz chunk_pos(0, 0, 0);
+
+				if(m_world.getChunkAt(chunk_pos).getChunkMesh().has_value())
+				{
+					const pos_xyz world_pos = chunk_pos * CHUNK_SIZE;
+					bs::Transform t;
+					t.pos = world_pos;
+
+					std::string modelname("chunk_" + 
+						std::to_string(chunk_pos.x) + 
+						std::to_string(chunk_pos.y) + 
+						std::to_string(chunk_pos.z));
+
+					bs::GameObject chunk(t, modelname);
+					renderer.drawObject(chunk);
+				}
+
+			}
+		}
 	}
 }

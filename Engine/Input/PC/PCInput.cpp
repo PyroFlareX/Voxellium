@@ -15,12 +15,10 @@ namespace Input
 	Inputs input = { };
 
 	bool enableCursor = false;
-	bool updatemovement = false;
+	// bool updatemovement = false;
 
 	double mX1 = 0, mY1 = 0;
 	double mX2 = 0, mY2 = 0;
-
-	bool enableZoom = true;
 
 	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
@@ -62,10 +60,6 @@ namespace Input
 		io.MouseWheel = yoffset;
 		io.MouseWheelH = xoffset;
 
-		if(enableZoom)
-		{
-			input.zoom = -yoffset;
-		}
 	}
 
 	void mouse_callback(GLFWwindow* window, int button, int action, int modifier) 
@@ -103,15 +97,12 @@ namespace Input
 			if (action == 1) 
 			{
 				glfwGetCursorPos(window, &mX2, &mY2);
-				//input.updateMovementConsumable = true;
-				updatemovement = true;
+
 				io.MouseClicked[button] = true;
 				io.MouseDown[button] = true;
 			}
 			else if (action == 0) 
 			{
-				//input.updateMovementConsumable = false;
-				updatemovement = false;
 				io.MouseDown[button] = false;
 				io.MouseClicked[button] = false;
 			}
@@ -121,15 +112,12 @@ namespace Input
 			if (action == 1) 
 			{
 				glfwGetCursorPos(window, &mX2, &mY2);
-				//input.updateMovementConsumable = true;
-				updatemovement = true;
+
 				io.MouseClicked[button] = true;
 				io.MouseDown[button] = true;
 			}
 			else if (action == 0) 
 			{
-				//input.updateMovementConsumable = false;
-				updatemovement = false;
 				io.MouseDown[button] = false;
 				io.MouseClicked[button] = false;
 			}
@@ -177,29 +165,30 @@ namespace Input
 			io.MouseClickedPos[0] = ImVec2(mX1, mY1);
 		}
 
-		if (updatemovement) 
+		/*if(updatemovement) 
 		{
 			int wh = 0, ww = 0;
 			glfwGetWindowSize(window, &ww, &wh);
 			input.mouseUD = float(mY2 - mY1) / float(wh);
 			input.mouseLR = float(mX2 - mX1) / float(ww);
-		}
+		}*/
 		
 		if(io.WantCaptureMouse)
 		{
-			enableZoom = false;
-		}
-		else
-		{
-			enableZoom = true;
+		
 		}
 
-		if (!enableCursor)
+		if(!enableCursor)
 		{
 			glfwGetCursorPos(window, &x, &y);
 			glfwSetCursorPos(window, 0, 0);
 			input.mouseUD -= y;
 			input.mouseLR += x;
+			
+			input.mouseUD = io.MouseDelta.y;
+			input.mouseLR = io.MouseDelta.x;
+			
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}
 		else
 		{
@@ -235,11 +224,11 @@ namespace Input
 		{
 			input.shift = true; //down
 		}
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_RELEASE)
 		{
 			input.escape = true; //pause
-			/*glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			enableCursor = !enableCursor;*/
+			// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			enableCursor = !enableCursor;
 		}
 		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 		{

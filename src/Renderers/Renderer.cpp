@@ -288,8 +288,6 @@ void Renderer::render(Camera& cam)
 	m_UIRenderer->bakeImGui();
 
 	//Main Pass
-	void* params[] = { this, &cam };
-
 	jobSystem.wait();
 
 	m_generalRenderer->render(cam);
@@ -377,8 +375,8 @@ void Renderer::pushGPUData(Camera& cam)
 	t.pos.y = 0.0f;
 	t.pos.z = 0.0f;
 	t.rot = bs::vec3(0.0f);
-	t.rescale(t, bs::vec3(0.0078125f));
-	t.rescale(t, bs::vec3(5616.0f, 1.0f, 2160.0f));
+	//t.rescale(t, bs::vec3(0.0078125f));
+	//t.rescale(t, bs::vec3(5616.0f, 1.0f, 2160.0f));
 	//-0.500000 -0.500000 0.500000
 	struct MVPstruct
 	{
