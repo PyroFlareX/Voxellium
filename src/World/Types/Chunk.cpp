@@ -63,6 +63,11 @@ void Chunk::setBlockAt(const pos_xyz& local_position, block_t block)
 	m_needs_mesh = true;
 }
 
+pos_xyz Chunk::getChunkPos() const noexcept
+{
+	return m_pos;
+}
+
 bool Chunk::checkIfEmpty() const noexcept
 {
 	for(const auto block_id : m_chunk_layout)

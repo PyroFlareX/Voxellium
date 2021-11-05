@@ -23,6 +23,8 @@ public:
 	block_t& getBlockAt(const pos_xyz& local_position);
 	//Set a block at the relative position
 	void setBlockAt(const pos_xyz& local_position, block_t block);
+	//Get position
+	pos_xyz getChunkPos() const noexcept;
 	//Checks if the chunk has any blocks (non air)
 	bool isEmpty() const noexcept;
 	//Returns whether the chunk needs a mesh built / has been updated
