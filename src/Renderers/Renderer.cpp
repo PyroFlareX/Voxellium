@@ -261,7 +261,6 @@ void Renderer::initGUI()
 
 		imgfont.create(fontsize.x, fontsize.y, (bs::u8vec4*)fontData);
 		
-
 		bs::vk::Texture& font = bs::asset_manager->getTextureMutable(0);
 		font.loadFromImage(imgfont);
 		bs::asset_manager->addImg(imgfont, "font");
@@ -273,10 +272,9 @@ void Renderer::drawObject(bs::GameObject& entity)
 	m_generalRenderer->addInstance(entity);
 }
 
-
 void Renderer::drawText()
 {
-	m_UIRenderer->addText("Pogchamp", {500, 500});
+	m_UIRenderer->addText("Example Text", {500, 500});
 }
 
 void Renderer::render(Camera& cam)

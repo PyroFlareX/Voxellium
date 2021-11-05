@@ -105,7 +105,6 @@ void GeneralRenderer::render(Camera& cam)
 		
 		vkCmdBindPipeline(m_renderlist.at(i), VK_PIPELINE_BIND_POINT_GRAPHICS, gfx);
 		
-
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -141,9 +140,7 @@ void GeneralRenderer::render(Camera& cam)
 		VkDeviceSize offset = 0;
 		vkCmdBindVertexBuffers(m_renderlist.at(i), 0, 1, &bs::asset_manager->getModel(std::move(m_queue.at(i - 1).model_id)).getVertexBuffer()->getAPIResource(), &offset);
 		
-
 		vkCmdBindIndexBuffer(m_renderlist.at(i), bs::asset_manager->getModel(std::move(m_queue.at(i - 1).model_id)).getIndexBuffer()->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
-		
 
 		vkCmdDrawIndexed(m_renderlist.at(i), bs::asset_manager->getModel(std::move(m_queue.at(i - 1).model_id)).getIndexBuffer()->getNumElements(), 1, 0, 0, 0);
 

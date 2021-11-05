@@ -57,6 +57,15 @@ void Worldstate::update(float dt)
 				auto* w = world;
 				generateMeshFor(*w, chunk_pos);
 				std::cout << "Generated Mesh!\n";
+				
+				bs::vk::Model chunkModel(w->getChunkAt(chunk_pos).getChunkMesh().value_or(bs::Mesh()),
+										bs::asset_manager->getTextureMutable(0).getDevice());
+
+				std::string modelname("chunk_" + 
+							std::to_string(chunk_pos.x) + 
+							std::to_string(chunk_pos.y) + 
+							std::to_string(chunk_pos.z));
+				bs::asset_manager->addModel(chunkModel, std::move(modelname));
 			});
 			jobSystem.schedule(makeChunkMesh, false);
 		}
@@ -65,7 +74,7 @@ void Worldstate::update(float dt)
 
 void Worldstate::lateUpdate(Camera& cam)
 {
-	
+	//Add the chunks to be rendered to a list
 }
 
 void Worldstate::render(Renderer& renderer)

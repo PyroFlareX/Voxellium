@@ -8,9 +8,8 @@ namespace bs::vk
 	class Model
 	{
 	public:
-		Model(bs::Mesh& mesh, bs::Device* dev)
+		Model(const bs::Mesh& mesh, bs::Device* dev)	:	m_mesh(mesh)
 		{
-			m_mesh = mesh;
 			addData(m_mesh, dev);
 		}
 		//Buffer the mesh
@@ -30,8 +29,8 @@ namespace bs::vk
 			indexBuffer.stride = sizeof(unsigned int);
 			indexBuffer.bufferData = m_mesh.indicies.data();
 			
-			m_modelbuffers.push_back(std::make_shared<Buffer>(vertexBuffer));
-			m_modelbuffers.push_back(std::make_shared<Buffer>(indexBuffer));
+			m_modelbuffers.emplace_back(std::make_shared<Buffer>(vertexBuffer));
+			m_modelbuffers.emplace_back(std::make_shared<Buffer>(indexBuffer));
 
 			uploadMesh();
 		}
@@ -55,13 +54,7 @@ namespace bs::vk
 			return m_modelbuffers.at(1).get();
 		}
 
-		~Model()
-		{
-			for (auto& buffer : m_modelbuffers)
-			{
-				//delete buffer;
-			}
-		}
+		~Model() = default;
 
 	private:
 		std::vector<std::shared_ptr<Buffer>> m_modelbuffers;
