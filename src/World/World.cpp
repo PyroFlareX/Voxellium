@@ -11,19 +11,20 @@ World::World()
 	m_baseWorld = std::make_shared<ChunkMap>();
 	m_baseWorld->reserve(CHUNK_VOLUME);
 
-	auto world = m_baseWorld;
-
 	//Generate some chunks
-	for(int chunk_x = -8; chunk_x < 8; ++chunk_x)
+	constexpr auto min = -2;
+	constexpr auto max = 2;
+
+	for(int chunk_x = min; chunk_x < max; ++chunk_x)
 	{
-		for(int chunk_y = -8; chunk_y < 8; ++chunk_y)
+		for(int chunk_y = min; chunk_y < max; ++chunk_y)
 		{
-			for(int chunk_z = -8; chunk_z < 8; ++chunk_z)
+			for(int chunk_z = min; chunk_z < max; ++chunk_z)
 			{
 				const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
 				m_baseWorld->emplace(chunk_pos, chunk_pos);
 
-				const auto generateChunk = jobSystem.createJob([this, world, chunk_pos](Job j)
+				const auto generateChunk = jobSystem.createJob([this, chunk_pos](Job j)
 				{
 					auto& chunk = getChunkAt(chunk_pos);
 
@@ -38,10 +39,26 @@ World::World()
 														chunk_pos.z * CHUNK_SIZE + z);
 								//Generation coolio!!!
 
-								chunk.setBlockAt({x, y, z}, y & 2);
+								chunk.setBlockAt({x, y, z}, 1);
 								//chunk.setBlockAt({x, y, z}, 0); //air
 							}
 						}
+					}
+
+					generateMeshFor(*this, chunk);
+
+					const auto& mesh = chunk.getChunkMesh();
+					if(!mesh.has_value())
+					{
+						//return;
+					}
+					else
+					{
+						bs::asset_manager->addModel(bs::vk::Model(*mesh, bs::asset_manager->getTextureMutable(0).getDevice()),
+							std::string("chunk_" + 
+							std::to_string(chunk_pos.x) + 
+							std::to_string(chunk_pos.y) + 
+							std::to_string(chunk_pos.z)));
 					}
 				});
 				jobSystem.schedule(generateChunk, false);

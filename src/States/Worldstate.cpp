@@ -103,7 +103,7 @@ void Worldstate::update(float dt)
 						std::to_string(chunk_pos.z)));
 				}
 			});
-			jobSystem.schedule(makeChunkMesh, false);
+			//jobSystem.schedule(makeChunkMesh, false);
 		}
 	}
 }
@@ -132,12 +132,11 @@ void Worldstate::render(Renderer& renderer)
 			std::to_string(chunk_pos.y) + 
 			std::to_string(chunk_pos.z));
 
-		bs::GameObject chunk(t, modelname);
+		//bs::GameObject chunk(t, modelname);
 
-		m_gameObjects.emplace_back(chunk);
+		m_gameObjects.emplace_back(t, modelname);
 
 		std::cout << "Added chunk at (0,0,0)\n";
-
 		ran = true;
 	}
 }

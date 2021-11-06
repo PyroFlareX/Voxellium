@@ -18,7 +18,7 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::v
 
 static inline bool tempisTransparent(block_t b)
 {
-	return (b == 0);
+	return true; //(b == 0);
 }
 
 // List out the vertices, indicies, UV coords, etc for the models
@@ -88,10 +88,10 @@ void generateMeshFor(const World& world, Chunk& chunk)
 	{
 		//Locks this chunk mesh building to this caller
 		chunk.setRemeshingFlag();
-		if(chunk.isEmpty())
+		/*if(chunk.isEmpty())
 		{
 			return;
-		}
+		}*/
 	}
 	else
 	{
@@ -131,7 +131,7 @@ void generateMeshFor(const World& world, Chunk& chunk)
 
 				//Check if transparent
 				//If the current block is transparent, skip it
-				if(tempisTransparent(block))
+				//if(tempisTransparent(block))
 				{
 					//continue;
 				}
