@@ -86,19 +86,22 @@ void Worldstate::update(float dt)
 			const auto makeChunkMesh = jobSystem.createJob([chunk_pos, world](Job j)
 			{
 				auto* w = world;
-				generateMeshFor(*w, chunk_pos);
+				auto& chunk = w->getChunkAt(chunk_pos);
+				generateMeshFor(*w, chunk);
 				
-				const auto& m = w->getChunkAt(chunk_pos).getChunkMesh();
-				if(!m.has_value())
+				const auto& mesh = chunk.getChunkMesh();
+				if(!mesh.has_value())
 				{
-					return;
+					//return;
 				}
-				
-				bs::asset_manager->addModel(bs::vk::Model(*m, bs::asset_manager->getTextureMutable(0).getDevice()),
-					std::string("chunk_" + 
-					std::to_string(chunk_pos.x) + 
-					std::to_string(chunk_pos.y) + 
-					std::to_string(chunk_pos.z)));
+				else
+				{
+					bs::asset_manager->addModel(bs::vk::Model(*mesh, bs::asset_manager->getTextureMutable(0).getDevice()),
+						std::string("chunk_" + 
+						std::to_string(chunk_pos.x) + 
+						std::to_string(chunk_pos.y) + 
+						std::to_string(chunk_pos.z)));
+				}
 			});
 			jobSystem.schedule(makeChunkMesh, false);
 		}

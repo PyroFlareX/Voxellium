@@ -56,8 +56,8 @@ void Camera::update()
 	if (rot.x > 90.0f) { rot.x = 89.9f; }
 	if (rot.x < -90.0f) { rot.x = -89.9f; }
 
-	if (rot.y > 180.0f) { rot.y = 179.9f; }
-	if (rot.y < -180.0f) { rot.y = -179.9f; }
+	if (rot.y > 180.0f) { rot.y = -180.0f; }
+	if (rot.y < -180.0f) { rot.y = 180.0f; }
 
 	entityPos->rot = rot;
 }

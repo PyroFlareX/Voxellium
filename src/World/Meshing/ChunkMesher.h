@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../Types/AliasTypes.h"
-
 class World;
+class Chunk;
 
-void generateMeshFor(World& world, const pos_xyz& chunk_coord);
+void generateMeshFor(const World& world, Chunk& chunk);

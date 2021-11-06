@@ -30,15 +30,15 @@ const std::vector<bs::vec3> vertices =
 {
 	//8 vertices, one per corner
 	//Starting with 0,0,0 or left bottom front
-	{0.0f, 0.0f, 0.0f},	//0
-	{1.0f, 0.0f, 0.0f},	//1
-	{1.0f, 1.0f, 0.0f},	//2
-	{0.0f, 1.0f, 0.0f},	//3
-	{0.0f, 0.0f, 1.0f},	//4
-	{1.0f, 0.0f, 1.0f},	//5
-	{1.0f, 1.0f, 1.0f},	//6
-	{0.0f, 1.0f, 1.0f}	//7		//8 total
-
+	{0.0f, 0.0f, 0.0f},	//0	//Left,		Bottom,	Front
+	{1.0f, 0.0f, 0.0f},	//1	//Right,	Bottom,	Front
+	{1.0f, 1.0f, 0.0f},	//2	//Right,	Top,	Front
+	{0.0f, 1.0f, 0.0f},	//3	//Left,		Top,	Front
+	{0.0f, 0.0f, 1.0f},	//4	//Left,		Bottom,	Back
+	{1.0f, 0.0f, 1.0f},	//5	//Right,	Bottom,	Back
+	{1.0f, 1.0f, 1.0f},	//6	//Right,	Top,	Back
+	{0.0f, 1.0f, 1.0f}	//7	//Left,		Top,	Back
+	//8 total
 };
 //Cube faces
 //Outside is counter-clockwise
@@ -82,24 +82,21 @@ constexpr pos_xyz FRONT(0, 0, -1);
 constexpr pos_xyz BACK(0, 0, 1);
 constexpr pos_xyz NONE(0, 0, 0);
 
-void generateMeshFor(World& world, const pos_xyz& chunk_coord)
+void generateMeshFor(const World& world, Chunk& chunk)
 {
-	//std::cout << "Generating Mesh!\n";
-
-	auto& chunk = world.getChunkAt(chunk_coord);
-
-	if(chunk.isEmpty())
+	if(chunk.needsMesh())
+	{
+		//Locks this chunk mesh building to this caller
+		chunk.setRemeshingFlag();
+		if(chunk.isEmpty())
+		{
+			return;
+		}
+	}
+	else
 	{
 		return;
 	}
-
-	if(!chunk.needsMesh())
-	{
-		return;
-	}
-	
-	//Locks this chunk mesh building to this caller
-	chunk.setRemeshingFlag();
 
 	/**	Algorithm layout:
 	 * For each block, check each block adjacent (6 sides) to see if it is transparent.
@@ -122,12 +119,6 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 	**/
 
 	bs::Mesh chunkMesh;
-	const bs::Vertex basicVert = 
-	{
-		.position = { 0.0f, 0.0f, 0.0f },
-		.normal = { 0.0f, 0.0f, 0.0f},
-		.uv = { 0.0f, 0.0f }
-	};
 
 	for(int z = 0; z < CHUNK_SIZE; ++z)
 	{
@@ -139,23 +130,25 @@ void generateMeshFor(World& world, const pos_xyz& chunk_coord)
 				const auto block = chunk.getBlockAt(coords);
 
 				//Check if transparent
+				//If the current block is transparent, skip it
 				if(tempisTransparent(block))
 				{
-					continue;
+					//continue;
 				}
 
 				//Check if each face should be rendered
 				//Get each adjacent block
-				const auto blockUP = getBlockAt(coords + UP, chunk, world);
-				const auto blockDOWN = getBlockAt(coords + DOWN, chunk, world);
-				const auto blockLEFT = getBlockAt(coords + LEFT, chunk, world);
-				const auto blockRIGHT = getBlockAt(coords + RIGHT, chunk, world);
-				const auto blockFRONT = getBlockAt(coords + FRONT, chunk, world);
-				const auto blockBACK = getBlockAt(coords + BACK, chunk, world);
+				const auto blockUP =	getBlockAt(coords + UP, chunk, world);
+				const auto blockDOWN =	getBlockAt(coords + DOWN, chunk, world);
+				const auto blockLEFT =	getBlockAt(coords + LEFT, chunk, world);
+				const auto blockRIGHT =	getBlockAt(coords + RIGHT, chunk, world);
+				const auto blockFRONT =	getBlockAt(coords + FRONT, chunk, world);
+				const auto blockBACK =	getBlockAt(coords + BACK, chunk, world);
 
 				//Check the blocks to the registry with the registry
 				//BlockDataRegistry
 				//Using this temp function for now to do it
+				//If the adjacent block is transparent, then add the face to the mesh
 				if(tempisTransparent(blockUP))
 				{
 					//Add upper face
@@ -259,25 +252,29 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::v
 		.uv = { 0.0f, 0.0f }
 	};
 
+	//Verts are in counter clockwise orientation
 	auto v1 = basicVert;
 	v1.normal = direction;
 	auto v2 = v1;
+	v2.uv = { 1.0f, 0.0f };
 	auto v3 = v1;
+	v3.uv = { 1.0f, 1.0f };
 	auto v4 = v1;
+	v4.uv = { 0.0f, 1.0f };
 
 	//Each pre-made index array magic nums: 0, 1, 2, 4
-	v1.position = vertices[baked_face[0]];
-	v2.position = vertices[baked_face[1]];
-	v3.position = vertices[baked_face[2]];
-	v4.position = vertices[baked_face[4]];
+	v1.position = vertices[baked_face[0]];	//Bottom Left
+	v2.position = vertices[baked_face[1]];	//Bottom Right
+	v3.position = vertices[baked_face[2]];	//Top Right
+	v4.position = vertices[baked_face[4]];	//Top Left
 	//Indexing
-	u32 currentIndex = chunkmesh.vertices.size();
+	const u32 currentIndex = chunkmesh.vertices.size();
 	chunkmesh.vertices.emplace_back(v1);
 	chunkmesh.vertices.emplace_back(v2);
 	chunkmesh.vertices.emplace_back(v3);
 	chunkmesh.vertices.emplace_back(v4);
 
-	for(const auto offsetBase : baked_face)
+	for(const auto& offsetBase : baked_face)
 	{
 		chunkmesh.indicies.emplace_back(offsetBase + currentIndex);
 	}

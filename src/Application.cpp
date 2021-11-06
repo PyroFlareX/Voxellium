@@ -115,10 +115,10 @@ void Application::RunLoop()
 			io.DeltaTime = dt;
 			io.Framerate = (float)frames;
 			
-			std::cout << frames << " per sec\n";
+			//std::cout << frames << " per sec\n";
 
-			printf("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
-			printf("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.rot.x, m_camera.rot.y, m_camera.rot.z);
+			//printf("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
+			//printf("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.rot.x, m_camera.rot.y, m_camera.rot.z);
 			//std::cout << dt * 1000 << " ms\n";
 			t = 0;
 			frames = 0;
