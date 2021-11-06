@@ -14,7 +14,7 @@ constexpr static inline pos_xyz fromIndex(u32 index) noexcept;
 static block_t getBlockAt(const pos_xyz& rel_to_chunk, const Chunk& chunk, const World& world);
 static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk);
 
-static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::vector<u32>& face);
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xyz& direction, const std::vector<u32>& face);
 
 static inline bool tempisTransparent(block_t b)
 {
@@ -152,32 +152,32 @@ void generateMeshFor(const World& world, Chunk& chunk)
 				if(tempisTransparent(blockUP))
 				{
 					//Add upper face
-					makeFace(chunkMesh, UP, top);
+					makeFace(chunkMesh, coords, UP, top);
 				}
 				if(tempisTransparent(blockDOWN))
 				{
 					//Add lower face
-					makeFace(chunkMesh, DOWN, bottom);
+					makeFace(chunkMesh, coords, DOWN, bottom);
 				}
 				if(tempisTransparent(blockFRONT))
 				{
 					//Add front face
-					makeFace(chunkMesh, FRONT, front);
+					makeFace(chunkMesh, coords, FRONT, front);
 				}
 				if(tempisTransparent(blockBACK))
 				{
 					//Add back face
-					makeFace(chunkMesh, BACK, back);
+					makeFace(chunkMesh, coords, BACK, back);
 				}
 				if(tempisTransparent(blockLEFT))
 				{
 					//Add left face
-					makeFace(chunkMesh, LEFT, left);
+					makeFace(chunkMesh, coords, LEFT, left);
 				}
 				if(tempisTransparent(blockRIGHT))
 				{
 					//Add right face
-					makeFace(chunkMesh, RIGHT, right);
+					makeFace(chunkMesh, coords, RIGHT, right);
 				}
 			}	//x
 		}	//y
@@ -243,7 +243,7 @@ static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk)
 	}
 }
 
-static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::vector<u32>& baked_face)
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xyz& direction, const std::vector<u32>& baked_face)
 {
 	constexpr bs::Vertex basicVert = 
 	{
@@ -251,6 +251,8 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::v
 		.normal = { 0.0f, 0.0f, 0.0f},
 		.uv = { 0.0f, 0.0f }
 	};
+
+	const bs::vec3 offset(block_pos.x, block_pos.y, block_pos.z);
 
 	//Verts are in counter clockwise orientation
 	auto v1 = basicVert;
@@ -263,10 +265,10 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& direction, const std::v
 	v4.uv = { 0.0f, 1.0f };
 
 	//Each pre-made index array magic nums: 0, 1, 2, 4
-	v1.position = vertices[baked_face[0]];	//Bottom Left
-	v2.position = vertices[baked_face[1]];	//Bottom Right
-	v3.position = vertices[baked_face[2]];	//Top Right
-	v4.position = vertices[baked_face[4]];	//Top Left
+	v1.position = vertices[baked_face[0]] + offset;	//Bottom Left
+	v2.position = vertices[baked_face[1]] + offset;	//Bottom Right
+	v3.position = vertices[baked_face[2]] + offset;	//Top Right
+	v4.position = vertices[baked_face[4]] + offset;	//Top Left
 	//Indexing
 	const u32 currentIndex = chunkmesh.vertices.size();
 	chunkmesh.vertices.emplace_back(v1);
