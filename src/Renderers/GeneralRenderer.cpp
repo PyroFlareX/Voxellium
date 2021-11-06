@@ -7,30 +7,6 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass* rpass, Vk
 	bs::vk::createCommandPool(*p_device, m_pool);
 	m_renderpass = rpass;
 
-	// Mesh
-	/*std::string flatplane("flatplane");
-	void* data[] = { p_device, &flatplane };
-
-	//Num Models
-	short numModels = 1;
-	
-	//Create a job for each model to load, the job loads the model and adds it to the asset manager
-	for(int i = 1; i <= numModels; ++i)
-	{
-		Job load = jobSystem.createJob([i](Job j)
-		{
-			int index = i;
-			auto* r = j.data[index];
-			// will crash if pointer is uninitialized
-			std::string s(*static_cast<std::string*>(r));
-
-			bs::Mesh m = bs::loadMeshFromObj("res/Models/" + s + ".obj");
-			auto* model = new bs::vk::Model(m, static_cast<bs::Device*>(j.data[0]));
-			bs::asset_manager->addModel(*model, std::move(s));
-		}, data);
-		
-		jobSystem.schedule(load);
-	}*/
 
 	//Renderlists for secondary cmd buffers
 	m_renderlist.resize(10);
@@ -89,7 +65,7 @@ void GeneralRenderer::render(Camera& cam)
 		extent.height = bs::vk::viewportheight;
 		extent.width = bs::vk::viewportwidth;
 	
-	// AUTISTIC THING : THIS STARTS THE RECORDING FOR THE IMGUI SECONDARY
+	// STUPID WORKAROUND THING : THIS STARTS THE RECORDING FOR THE IMGUI SECONDARY
 	// The idea is thet I reserve the 0th index of the secondary cmd buffers for imgui rendering
 	if (vkBeginCommandBuffer(m_renderlist.at(0), &beginInfo) != VK_SUCCESS) 
 	{

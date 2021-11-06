@@ -36,6 +36,5 @@ private:
 	VkCommandPool m_pool;
 	std::vector<VkCommandBuffer> m_renderlist;
 	bs::Device* p_device;
-
 };
 

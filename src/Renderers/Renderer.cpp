@@ -14,18 +14,6 @@ Renderer::Renderer(bs::Device* renderingDevice)
 	//Create image + texture
 	bs::vk::Texture font(device);
 	bs::asset_manager->addTexture(font, 0);	//adds empty texture, gets updated later
-
-	//Texture
-	/*bs::Image img2;
-	if (img2.loadFromFile("res/papertexture.jpg"))
-	{
-		std::cout << "Image creation success \n";
-	}
-*//*
-	bs::vk::Texture texture(renderingDevice);
-	texture.loadFromImage(img2);
-	bs::asset_manager->addTexture(texture, 1);*/
-
 	
 	//Blank white img
 	bs::Image imgblank;
@@ -75,7 +63,6 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
-		
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -115,9 +102,8 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 
+	VkResult result;
 	// Descriptor Pools
-	//std::cout << "Num Textures: " << bs::asset_manager->getNumTextures() << "\n";
-
 	VkDescriptorPoolCreateInfo descpoolinfo{};	//Collapse descriptors
 	{
 		descpoolinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -125,7 +111,7 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		descpoolinfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
 		VkDescriptorPoolSize descpoolsize[numDescriptors] = {};
-		descpoolsize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descpoolsize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;	//For the (M?) VP matrix
 		descpoolsize[0].descriptorCount = 1;
 
 		descpoolsize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -133,12 +119,12 @@ Renderer::Renderer(bs::Device* renderingDevice)
 
 		descpoolinfo.pPoolSizes = &descpoolsize[0];
 		descpoolinfo.poolSizeCount = numDescriptors;
+		descpoolinfo.maxSets = 4;
 
-		descpoolinfo.maxSets = 15;
-
-		VkResult result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
-		
-		// Descriptor Sets
+		result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
+	}
+	// Descriptor Sets
+	{
 		VkDescriptorSetLayoutBinding setlayoutbinding[numDescriptors] = {};
 		setlayoutbinding[0].binding = 0;
 		setlayoutbinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -150,7 +136,6 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		setlayoutbinding[1].stageFlags = VK_SHADER_STAGE_ALL;
 		setlayoutbinding[1].descriptorCount = bs::asset_manager->getNumTextures();
 
-
 		//For texture indexing:
 		VkDescriptorSetLayoutBindingFlagsCreateInfo layoutbindingflags = {};
 		layoutbindingflags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
@@ -158,7 +143,7 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT };
 		layoutbindingflags.pBindingFlags = flags;
 		
-
+		//Layout Creation for bindings
 		VkDescriptorSetLayoutCreateInfo desclayoutinfo{};
 		desclayoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		desclayoutinfo.pNext = &layoutbindingflags;
@@ -166,8 +151,10 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		desclayoutinfo.pBindings = &setlayoutbinding[0];
 		desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 		
+		//Creating the layouts for the descriptor sets
 		result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
 
+		//Descriptor Allocation Info
 		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
 		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 
@@ -175,9 +162,9 @@ Renderer::Renderer(bs::Device* renderingDevice)
 		VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescAlloc = {};
 		variableDescAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
 		variableDescAlloc.descriptorSetCount = 1;
-		uint32_t varDescCount[] = { (uint32_t)bs::asset_manager->getNumTextures() };
+		u32 varDescCount[] = { (u32)bs::asset_manager->getNumTextures() };
 		variableDescAlloc.pDescriptorCounts = varDescCount;
-
+		//Filling the pNext
 		descriptorAllocInfo.pNext = &variableDescAlloc;
 		descriptorAllocInfo.descriptorPool = m_descpool;
 		descriptorAllocInfo.descriptorSetCount = 1;
@@ -211,10 +198,10 @@ Renderer::Renderer(bs::Device* renderingDevice)
 	bs::asset_manager->addBuffer(new bs::vk::Buffer(uniform), "MVP");
 	bs::asset_manager->getBuffer("MVP")->uploadBuffer();
 
+	//Create General Renderer
 	m_generalRenderer = std::make_unique<GeneralRenderer>(renderingDevice, &renderpassdefault, desclayout);
-
+	//Create UI Renderer Pipeline And the Renderer
 	bs::vk::createUIPipeline(*device, imguipipeline, renderpassdefault, guilayout, desclayout);
-
 	m_UIRenderer = std::make_unique<UIRenderer>(renderingDevice, imguipipeline, guilayout);
 }
 
@@ -232,7 +219,6 @@ void Renderer::initGUI()
 		vbufdesc.dev = device;
 		vbufdesc.stride = sizeof(ImDrawVert);
 		vbufdesc.size = 120;
-
 		
 		bs::vk::BufferDescription ibufdesc = {};
 		ibufdesc.bufferType = bs::vk::INDEX_BUFFER;
@@ -256,9 +242,7 @@ void Renderer::initGUI()
 		unsigned char* fontData;
 		bs::vec2i fontsize;
 		io.Fonts->AddFontDefault();
-
 		io.Fonts->GetTexDataAsRGBA32(&fontData, &fontsize.x, &fontsize.y);
-
 		imgfont.create(fontsize.x, fontsize.y, (bs::u8vec4*)fontData);
 		
 		bs::vk::Texture& font = bs::asset_manager->getTextureMutable(0);
@@ -371,13 +355,9 @@ void Renderer::pushGPUData(Camera& cam)
 	bufferInfo1.range = 192;
 
 	bs::Transform t;
-	t.pos.x = 0.0f;
-	t.pos.y = 0.0f;
-	t.pos.z = 0.0f;
-	t.rot = bs::vec3(0.0f);
-	//t.rescale(t, bs::vec3(0.0078125f));
-	//t.rescale(t, bs::vec3(5616.0f, 1.0f, 2160.0f));
-	//-0.500000 -0.500000 0.500000
+	t.pos = { 0.0f, 0.0f, 0.0f };
+	t.rot = { 0.0f, 0.0f, 0.0f };
+
 	struct MVPstruct
 	{
 		bs::mat4 proj;
@@ -393,6 +373,7 @@ void Renderer::pushGPUData(Camera& cam)
 	buf->writeBuffer(&MVP);
 
 	//Image Writing Info
+	//Collect textures
 	const auto& textures = bs::asset_manager->getTextures();
 	std::vector<VkDescriptorImageInfo> imageinfo;
 	imageinfo.reserve(textures.size());
@@ -403,7 +384,6 @@ void Renderer::pushGPUData(Camera& cam)
 		imginfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imginfo.imageView = textures[i].imgviewvk;
 		imginfo.sampler = textures[i].sampler;
-
 		imageinfo.emplace_back(imginfo);
 	}
 
@@ -428,30 +408,6 @@ void Renderer::pushGPUData(Camera& cam)
 	descWrite[1].pImageInfo = imageinfo.data();
 
 	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
-	
-	/*if(bs::asset_manager->loaded)
-	{
-		// VkDescriptorImageInfo cache;
-		// cache.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		// cache.imageView = bs::asset_manager->pMapCache->stuff.imgviewvk;
-		// cache.sampler = bs::asset_manager->pMapCache->stuff.sampler;
-
-		// descWrite[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		// descWrite[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		// descWrite[3].dstSet = m_descsetglobal;
-		// descWrite[3].dstBinding = 2;
-		// descWrite[3].dstArrayElement = 0;
-		// descWrite[3].descriptorCount = 1;
-		// descWrite[3].pImageInfo = &cache;
-
-		//Write Values to GPU
-		vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
-	}
-	else
-	{
-		//Write Values to GPU
-		vkUpdateDescriptorSets(device->getDevice(), numDescriptors - 1, &descWrite[0], 0, nullptr);
-	}*/
 }
 
 Renderer::~Renderer()
@@ -459,7 +415,7 @@ Renderer::~Renderer()
 	// gui related
 	vkDestroyPipeline(device->getDevice(), imguipipeline, nullptr);
 	vkDestroyPipelineLayout(device->getDevice(), guilayout, nullptr);
-	//
+	// Destroy the rest of the vulkan allocations
 	vkDestroyRenderPass(device->getDevice(), renderpassdefault, nullptr);
 	vkDestroyCommandPool(device->getDevice(), m_pool, nullptr);
 	vkDestroyDescriptorSetLayout(device->getDevice(), desclayout, nullptr);

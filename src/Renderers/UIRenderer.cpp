@@ -115,7 +115,6 @@ void UIRenderer::bakeImGui()
 		//												the amount in the buffer, then reallocated buffers
 		if((vertSize > vertexBuffer->getNumElements()) || (indexSize > indexBuffer->getNumElements()))
 		{
-			
 			vertexBuffer->deleteBuffer();
 			indexBuffer->deleteBuffer();
 
@@ -139,7 +138,6 @@ void UIRenderer::bakeImGui()
 				offsetindex += cmdlist->IdxBuffer.size_in_bytes();
 			}
 		}
-
 	}
 }
 

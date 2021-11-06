@@ -13,7 +13,7 @@ World::World()
 
 	//Generate some chunks
 	constexpr auto min = 0;
-	constexpr auto max = 1;
+	constexpr auto max = 4;
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -51,8 +51,8 @@ World::World()
 					if(mesh.has_value())
 					{
 						bs::asset_manager->addModel(bs::vk::Model(*mesh, bs::asset_manager->getTextureMutable(0).getDevice()),
-							std::string("chunk_" + 
-								std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + std::to_string(chunk_pos.z)));
+							std::string("chunk_" + std::to_string(chunk_pos.x) + 
+										std::to_string(chunk_pos.y) + std::to_string(chunk_pos.z)));
 					}
 				});
 				jobSystem.schedule(generateChunk, false);
