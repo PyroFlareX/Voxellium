@@ -74,10 +74,10 @@ bool Chunk::checkIfEmpty() const noexcept
 	{
 		if(block_id != air_id)
 		{
-			return true;
+			return false;
 		}
 	}
-	return false;
+	return true;
 }
 
 bool Chunk::isEmpty() const noexcept

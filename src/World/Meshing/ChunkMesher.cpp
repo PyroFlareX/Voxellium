@@ -18,7 +18,7 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xy
 
 static inline bool tempisTransparent(block_t b)
 {
-	return true; //(b == 0);
+	return (b == 0);
 }
 
 // List out the vertices, indicies, UV coords, etc for the models
@@ -54,8 +54,8 @@ const std::vector<u32> back
 };
 const std::vector<u32> top
 {
-	7, 3, 2,
-	2, 6, 7
+	3, 2, 6,
+	6, 7, 3
 };
 const std::vector<u32> bottom
 {
@@ -88,10 +88,10 @@ void generateMeshFor(const World& world, Chunk& chunk)
 	{
 		//Locks this chunk mesh building to this caller
 		chunk.setRemeshingFlag();
-		/*if(chunk.isEmpty())
+		if(chunk.isEmpty())
 		{
 			return;
-		}*/
+		}
 	}
 	else
 	{
@@ -120,18 +120,18 @@ void generateMeshFor(const World& world, Chunk& chunk)
 
 	bs::Mesh chunkMesh;
 
-	for(int z = 0; z < CHUNK_SIZE; ++z)
+	for(auto z = 0; z < CHUNK_SIZE; ++z)
 	{
-		for(int y = 0; y < CHUNK_SIZE; ++y)
+		for(auto y = 0; y < CHUNK_SIZE; ++y)
 		{
-			for(int x = 0; x < CHUNK_SIZE; ++x)
+			for(auto x = 0; x < CHUNK_SIZE; ++x)
 			{
 				const pos_xyz coords(x, y, z);
 				const auto block = chunk.getBlockAt(coords);
 
 				//Check if transparent
 				//If the current block is transparent, skip it
-				//if(tempisTransparent(block))
+				if(tempisTransparent(block))
 				{
 					//continue;
 				}
@@ -276,7 +276,14 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xy
 	chunkmesh.vertices.emplace_back(v3);
 	chunkmesh.vertices.emplace_back(v4);
 
-	for(const auto& offsetBase : baked_face)
+	//Generic Quad Indices:
+	static const std::vector<u32> quad_indices
+	{
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	for(const auto& offsetBase : quad_indices)
 	{
 		chunkmesh.indicies.emplace_back(offsetBase + currentIndex);
 	}
