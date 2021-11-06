@@ -108,10 +108,8 @@ void GeneralRenderer::render(Camera& cam)
 			0	//forth is ???
 		);
 		
-
 		vkCmdPushConstants(m_renderlist.at(i), playout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantsStruct), &pushconst);
-
 
 		VkDeviceSize offset = 0;
 		vkCmdBindVertexBuffers(m_renderlist.at(i), 0, 1, &bs::asset_manager->getModel(std::move(m_queue.at(i - 1).model_id)).getVertexBuffer()->getAPIResource(), &offset);

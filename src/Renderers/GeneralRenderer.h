@@ -30,7 +30,6 @@ private:
 	VkCommandBufferInheritanceInfo inheritanceInfo{};
 	VkRenderPass* m_renderpass;
 
-
 	// Vulkan Stuff
 	
 	VkCommandPool m_pool;

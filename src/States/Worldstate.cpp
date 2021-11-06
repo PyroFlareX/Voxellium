@@ -133,6 +133,7 @@ void Worldstate::render(Renderer& renderer)
 			std::to_string(chunk_pos.z));
 
 		m_gameObjects.emplace_back(t, modelname);
+		m_gameObjects.back().material.texture_id = 2;
 
 		std::cout << "Added chunk at (" << chunk_pos.x << ", " << chunk_pos.y << ", " << chunk_pos.z << ")\n";
 		ran = true;
