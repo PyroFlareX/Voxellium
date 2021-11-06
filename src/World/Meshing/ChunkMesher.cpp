@@ -248,7 +248,7 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xy
 	constexpr bs::Vertex basicVert = 
 	{
 		.position = { 0.0f, 0.0f, 0.0f },
-		.normal = { 0.0f, 0.0f, 0.0f},
+		.normal = { 0.0f, 0.0f, 0.0f },
 		.uv = { 0.0f, 0.0f }
 	};
 
@@ -256,7 +256,7 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xy
 
 	//Verts are in counter clockwise orientation
 	auto v1 = basicVert;
-	v1.normal = direction;
+	v1.normal = { 0.0f, 0.0f, 0.0f };//direction;
 	auto v2 = v1;
 	v2.uv = { 1.0f, 0.0f };
 	auto v3 = v1;

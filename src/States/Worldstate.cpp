@@ -132,11 +132,9 @@ void Worldstate::render(Renderer& renderer)
 			std::to_string(chunk_pos.y) + 
 			std::to_string(chunk_pos.z));
 
-		//bs::GameObject chunk(t, modelname);
-
 		m_gameObjects.emplace_back(t, modelname);
 
-		std::cout << "Added chunk at (0,0,0)\n";
+		std::cout << "Added chunk at (" << chunk_pos.x << ", " << chunk_pos.y << ", " << chunk_pos.z << ")\n";
 		ran = true;
 	}
 }
