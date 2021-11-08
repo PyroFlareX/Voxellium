@@ -1,5 +1,8 @@
 #include "Worldstate.h"
 
+#include <mutex>
+
+std::mutex g_obj_guard;
 
 Worldstate::Worldstate(Application& app) : Basestate(app)
 {
@@ -64,6 +67,7 @@ void Worldstate::input(float dt)
 void Worldstate::update(float dt)
 {
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
+	ImGui::SetNextWindowSize({100.0f, 50.0f});
 	if(ImGui::Begin("Debug UI", nullptr, windowflag))
 	{
 		const auto& cam = app.getCamera();
@@ -80,7 +84,6 @@ void Worldstate::update(float dt)
 		{
 			continue;
 		}
-
 		if(chunk.needsMesh())
 		{
 			const auto makeChunkMesh = jobSystem.createJob([chunk_pos, world](Job j)
@@ -97,10 +100,8 @@ void Worldstate::update(float dt)
 				else
 				{
 					bs::asset_manager->addModel(bs::vk::Model(*mesh, bs::asset_manager->getTextureMutable(0).getDevice()),
-						std::string("chunk_" + 
-						std::to_string(chunk_pos.x) + 
-						std::to_string(chunk_pos.y) + 
-						std::to_string(chunk_pos.z)));
+						std::string("chunk_" + std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + 
+							std::to_string(chunk_pos.z)));
 				}
 			});
 			//jobSystem.schedule(makeChunkMesh, false);

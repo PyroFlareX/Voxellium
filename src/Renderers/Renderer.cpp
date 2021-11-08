@@ -6,22 +6,22 @@
 
 constexpr int numDescriptors = 2;
 
-Renderer::Renderer(bs::Device* renderingDevice)
+Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
 {
-	device = renderingDevice;
-
 	//Add textures
 	//Create image + texture
 	bs::vk::Texture font(device);
-	bs::asset_manager->addTexture(font, 0);	//adds empty texture, gets updated later
+	//Adds empty texture, gets updated later, index 0 is the font texture
+	bs::asset_manager->addTexture(font, 0);	
 	
 	//Blank white img
 	bs::Image imgblank;
 	imgblank.create(32, 32, bs::u8vec4(255));
 
 // Duping img
-	bs::vk::Texture texture(renderingDevice);
+	bs::vk::Texture texture(device);
 	texture.loadFromImage(imgblank);
+	//Adding black white image for texture index 1
 	bs::asset_manager->addTexture(texture, 1);
 //Img
 
@@ -36,173 +36,43 @@ Renderer::Renderer(bs::Device* renderingDevice)
 			}
 		}
 	}
-	bs::vk::Texture textureblank(renderingDevice);
+	bs::vk::Texture textureblank(device);
 	textureblank.loadFromImage(imgblank);
+	//Adding a diagonal purple texture for index 2
 	bs::asset_manager->addTexture(textureblank, 2);
 
 	//For IMGUI
 	initGUI();
 
-	//Folding Scope
-	{
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//Init the renderpass
+	initRenderpass();
+	//Init the command pool and the cmd buffer
+	initCommandPoolAndBuffers();
 
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(device->getDevice(), &renderPassInfo, nullptr, &renderpassdefault) != VK_SUCCESS) 
-		{
-			throw std::runtime_error("failed to create render pass!");
-		}
-	}
-	bs::vk::createCommandPool(*device, m_pool);
-
-	//m_primaryBuffers.resize(bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS);
-	m_primaryBuffers.resize(1);
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = m_pool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = m_primaryBuffers.size();
-
-	if (vkAllocateCommandBuffers(device->getDevice(), &allocInfo, m_primaryBuffers.data()) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
-
-	VkResult result;
-	// Descriptor Pools
-	VkDescriptorPoolCreateInfo descpoolinfo{};	//Collapse descriptors
-	{
-		descpoolinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descpoolinfo.pNext = nullptr;
-		descpoolinfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
-
-		VkDescriptorPoolSize descpoolsize[numDescriptors] = {};
-		descpoolsize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;	//For the (M?) VP matrix
-		descpoolsize[0].descriptorCount = 1;
-
-		descpoolsize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descpoolsize[1].descriptorCount = bs::asset_manager->getNumTextures();
-
-		descpoolinfo.pPoolSizes = &descpoolsize[0];
-		descpoolinfo.poolSizeCount = numDescriptors;
-		descpoolinfo.maxSets = 4;
-
-		result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
-	}
-	// Descriptor Sets
-	{
-		VkDescriptorSetLayoutBinding setlayoutbinding[numDescriptors] = {};
-		setlayoutbinding[0].binding = 0;
-		setlayoutbinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		setlayoutbinding[0].stageFlags = VK_SHADER_STAGE_ALL;
-		setlayoutbinding[0].descriptorCount = 1;
-
-		setlayoutbinding[1].binding = 1;
-		setlayoutbinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		setlayoutbinding[1].stageFlags = VK_SHADER_STAGE_ALL;
-		setlayoutbinding[1].descriptorCount = bs::asset_manager->getNumTextures();
-
-		//For texture indexing:
-		VkDescriptorSetLayoutBindingFlagsCreateInfo layoutbindingflags = {};
-		layoutbindingflags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-		layoutbindingflags.bindingCount = numDescriptors;
-		VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT };
-		layoutbindingflags.pBindingFlags = flags;
-		
-		//Layout Creation for bindings
-		VkDescriptorSetLayoutCreateInfo desclayoutinfo{};
-		desclayoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		desclayoutinfo.pNext = &layoutbindingflags;
-		desclayoutinfo.bindingCount = numDescriptors;
-		desclayoutinfo.pBindings = &setlayoutbinding[0];
-		desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-		
-		//Creating the layouts for the descriptor sets
-		result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
-
-		//Descriptor Allocation Info
-		VkDescriptorSetAllocateInfo descriptorAllocInfo{};
-		descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-
-		//For descriptor indexing
-		VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescAlloc = {};
-		variableDescAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
-		variableDescAlloc.descriptorSetCount = 1;
-		u32 varDescCount[] = { (u32)bs::asset_manager->getNumTextures() };
-		variableDescAlloc.pDescriptorCounts = varDescCount;
-		//Filling the pNext
-		descriptorAllocInfo.pNext = &variableDescAlloc;
-		descriptorAllocInfo.descriptorPool = m_descpool;
-		descriptorAllocInfo.descriptorSetCount = 1;
-		descriptorAllocInfo.pSetLayouts = &desclayout;
-		
-		result = vkAllocateDescriptorSets(device->getDevice(), &descriptorAllocInfo, &m_descsetglobal);
-		if(result != VK_SUCCESS)
-		{
-			std::cout << "Allocate Descriptor Sets Failed, result = " << result << "\n";
-		}
-	}
-	bs::asset_manager->pDescsetglobal = &m_descsetglobal;
-
-	struct MVP
-	{
-		bs::mat4 proj;
-		bs::mat4 view;
-		bs::mat4 model;
-	} uniformbufferthing;
-
-	// Descriptor Set Buffers:
-
-	// Uniform buffer
-	bs::vk::BufferDescription uniform;
-	uniform.bufferType = bs::vk::BufferUsage::UNIFORM_BUFFER;
-	uniform.dev = device;
-	uniform.size = sizeof(MVP);
-	uniform.stride = 64;
-	uniform.bufferData = &uniformbufferthing;
-
-	bs::asset_manager->addBuffer(new bs::vk::Buffer(uniform), "MVP");
-	bs::asset_manager->getBuffer("MVP")->uploadBuffer();
+	// Descriptor Pool
+	initDescriptorPool();
+	// Descriptor Set
+	initDescriptorSets();
+	// Initializing the descriptor set buffers
+	initDescriptorSetBuffers();
 
 	//Create General Renderer
-	m_generalRenderer = std::make_unique<GeneralRenderer>(renderingDevice, &renderpassdefault, desclayout);
+	m_generalRenderer = std::make_unique<GeneralRenderer>(device, &renderpassdefault, desclayout);
 	//Create UI Renderer Pipeline And the Renderer
 	bs::vk::createUIPipeline(*device, imguipipeline, renderpassdefault, guilayout, desclayout);
-	m_UIRenderer = std::make_unique<UIRenderer>(renderingDevice, imguipipeline, guilayout);
+	m_UIRenderer = std::make_unique<UIRenderer>(device, imguipipeline, guilayout);
+}
+
+Renderer::~Renderer()
+{
+	// GUI/ImGui related
+	vkDestroyPipeline(device->getDevice(), imguipipeline, nullptr);
+	vkDestroyPipelineLayout(device->getDevice(), guilayout, nullptr);
+	// Destroy the rest of the Vulkan allocations
+	vkDestroyRenderPass(device->getDevice(), renderpassdefault, nullptr);
+	vkDestroyCommandPool(device->getDevice(), m_pool, nullptr);
+	vkDestroyDescriptorSetLayout(device->getDevice(), desclayout, nullptr);
+	vkDestroyDescriptorPool(device->getDevice(), m_descpool, nullptr);
 }
 
 void Renderer::initGUI()
@@ -292,49 +162,68 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 		m_UIRenderer->finish(cmd);
 	}
 
-	//Primary Buffer Recording
-	auto& cmd = m_primaryBuffers.at(0);
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-	if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) {
-		throw std::runtime_error("failed to begin recording command buffer!");
-	}
-
+	//Renderpass info stuff
 	VkRenderPassBeginInfo renderPassInfo{};
-
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = renderpassdefault;
 	renderPassInfo.framebuffer = fbo.handle[index];
-
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	
+	//Extent defining for renderpass
 	VkExtent2D extent;
 	extent.height = bs::vk::viewportheight;
 	extent.width = bs::vk::viewportwidth;
-
 	renderPassInfo.renderArea.extent = extent;
-
+	//Clear color for renderpass
 	//VkClearDepthStencilValue depthClear = {};
 	VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 
-	//VK_SUBPASS_CONTENTS_INLINE //VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-	vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	//Primary Buffer Recording
+	//Begin Info
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	//Execute all the cmd buffers for the general renderer
-	vkCmdExecuteCommands(cmd, renderLists.size() - 1, &renderLists[1]);
-	//AFTER ^ is done, THEN submit the ImGui Draw
-	vkCmdExecuteCommands(cmd, 1, &renderLists[0]);
-
-	vkCmdEndRenderPass(cmd);
-
-	if (vkEndCommandBuffer(cmd) != VK_SUCCESS) 
+	for(auto& cmd : m_primaryBuffers)
 	{
-		throw std::runtime_error("failed to record command buffer!");
+		//Begin Recording the buffer
+		if(vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) 
+		{
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
+		//Begin the renderpass
+		//VK_SUBPASS_CONTENTS_INLINE //VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+		vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		///	ACTUAL RECORDING DONE HERE:
+
+		/**
+		 * Order: 
+		 * #1: General Renderer
+		 * ...
+		 * Chunk Renderer
+		 * 
+		 * The others
+		 * ...
+		 * #Last: ImGui Renderer
+		 * 
+		**/
+		
+		//Execute all the cmd buffers for the general renderer
+		vkCmdExecuteCommands(cmd, renderLists.size() - 1, &renderLists[1]);
+		
+		
+		//AFTER ^ is done, THEN submit the ImGui Draw
+		vkCmdExecuteCommands(cmd, 1, &renderLists[0]);
+
+
+		/// ENDING THE RECORDING
+		vkCmdEndRenderPass(cmd);
+		if(vkEndCommandBuffer(cmd) != VK_SUCCESS) 
+		{
+			throw std::runtime_error("failed to record command buffer!");
+		}
 	}
-	
 
 	//Submit main rendering
 	device->submitWork(m_primaryBuffers);
@@ -410,14 +299,180 @@ void Renderer::pushGPUData(Camera& cam)
 	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
 }
 
-Renderer::~Renderer()
+void Renderer::initRenderpass()
 {
-	// gui related
-	vkDestroyPipeline(device->getDevice(), imguipipeline, nullptr);
-	vkDestroyPipelineLayout(device->getDevice(), guilayout, nullptr);
-	// Destroy the rest of the vulkan allocations
-	vkDestroyRenderPass(device->getDevice(), renderpassdefault, nullptr);
-	vkDestroyCommandPool(device->getDevice(), m_pool, nullptr);
-	vkDestroyDescriptorSetLayout(device->getDevice(), desclayout, nullptr);
-	vkDestroyDescriptorPool(device->getDevice(), m_descpool, nullptr);
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+
+	VkSubpassDependency dependency{};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
+
+	if (vkCreateRenderPass(device->getDevice(), &renderPassInfo, nullptr, &renderpassdefault) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to create render pass!");
+	}
+
+}
+
+void Renderer::initDescriptorPool()
+{
+	VkResult result;
+
+	//Descriptor pool stuff
+	VkDescriptorPoolCreateInfo descpoolinfo{};
+
+	descpoolinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descpoolinfo.pNext = nullptr;
+	descpoolinfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+
+	VkDescriptorPoolSize descpoolsize[numDescriptors] = {};
+	descpoolsize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;	//For the (M?) VP matrix
+	descpoolsize[0].descriptorCount = 1;
+
+	descpoolsize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descpoolsize[1].descriptorCount = bs::asset_manager->getNumTextures();
+
+	descpoolinfo.pPoolSizes = &descpoolsize[0];
+	descpoolinfo.poolSizeCount = numDescriptors;
+	descpoolinfo.maxSets = 4;
+
+	result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
+	if(result != VK_SUCCESS)
+	{
+		std::cout << "Creating Descriptor Pool Failed, result = " << result << "\n";
+	}
+}
+
+void Renderer::initDescriptorSets()
+{
+	VkResult result;
+
+	// Descriptor Sets
+	VkDescriptorSetLayoutBinding setlayoutbinding[numDescriptors] = {};
+	setlayoutbinding[0].binding = 0;
+	setlayoutbinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	setlayoutbinding[0].stageFlags = VK_SHADER_STAGE_ALL;
+	setlayoutbinding[0].descriptorCount = 1;
+
+	setlayoutbinding[1].binding = 1;
+	setlayoutbinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	setlayoutbinding[1].stageFlags = VK_SHADER_STAGE_ALL;
+	setlayoutbinding[1].descriptorCount = bs::asset_manager->getNumTextures();
+
+	//For texture indexing:
+	VkDescriptorSetLayoutBindingFlagsCreateInfo layoutbindingflags = {};
+	layoutbindingflags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+	layoutbindingflags.bindingCount = numDescriptors;
+	VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT };
+	layoutbindingflags.pBindingFlags = flags;
+		
+	//Layout Creation for bindings
+	VkDescriptorSetLayoutCreateInfo desclayoutinfo{};
+	desclayoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	desclayoutinfo.pNext = &layoutbindingflags;
+	desclayoutinfo.bindingCount = numDescriptors;
+	desclayoutinfo.pBindings = &setlayoutbinding[0];
+	desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+		
+	//Creating the layouts for the descriptor sets
+	result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
+	if(result != VK_SUCCESS)
+	{
+		std::cout << "Creating Descriptor Set Layout Failed, result = " << result << "\n";
+	}
+
+	//Descriptor Allocation Info
+	VkDescriptorSetAllocateInfo descriptorAllocInfo{};
+	descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+
+	//For descriptor indexing
+	VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescAlloc = {};
+	variableDescAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+	variableDescAlloc.descriptorSetCount = 1;
+	u32 varDescCount[] = { (u32)bs::asset_manager->getNumTextures() };
+	variableDescAlloc.pDescriptorCounts = varDescCount;
+	//Filling the pNext
+	descriptorAllocInfo.pNext = &variableDescAlloc;
+	descriptorAllocInfo.descriptorPool = m_descpool;
+	descriptorAllocInfo.descriptorSetCount = 1;
+	descriptorAllocInfo.pSetLayouts = &desclayout;
+		
+	result = vkAllocateDescriptorSets(device->getDevice(), &descriptorAllocInfo, &m_descsetglobal);
+	if(result != VK_SUCCESS)
+	{
+		std::cout << "Allocate Descriptor Sets Failed, result = " << result << "\n";
+	}
+
+	bs::asset_manager->pDescsetglobal = &m_descsetglobal;
+}
+
+void Renderer::initCommandPoolAndBuffers()
+{
+	bs::vk::createCommandPool(*device, m_pool);
+
+	m_primaryBuffers.resize(1);
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = m_pool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = m_primaryBuffers.size();
+
+	if (vkAllocateCommandBuffers(device->getDevice(), &allocInfo, m_primaryBuffers.data()) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("failed to allocate command buffers!");
+	}
+}
+
+void Renderer::initDescriptorSetBuffers()
+{
+	struct MVP
+	{
+		bs::mat4 proj;
+		bs::mat4 view;
+		bs::mat4 model;
+	} uniformbufferthing;
+
+	// Descriptor Set Buffers:
+
+	// Uniform buffer
+	bs::vk::BufferDescription uniform;
+	uniform.bufferType = bs::vk::BufferUsage::UNIFORM_BUFFER;
+	uniform.dev = device;
+	uniform.size = sizeof(MVP);
+	uniform.stride = sizeof(bs::mat4);
+	uniform.bufferData = &uniformbufferthing;
+
+	bs::asset_manager->addBuffer(new bs::vk::Buffer(uniform), "MVP");
+	bs::asset_manager->getBuffer("MVP")->uploadBuffer();
 }

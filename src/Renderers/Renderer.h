@@ -2,8 +2,7 @@
 
 #include "GeneralRenderer.h"
 #include "UIRenderer.h"
-
-#include <Engine.h>
+#include "ChunkRenderer.h"
 
 class Camera;
 
@@ -34,6 +33,13 @@ public:
 
 private:
 	void initGUI();
+
+	void initRenderpass();
+	void initDescriptorPool();
+	void initDescriptorSets();
+
+	void initCommandPoolAndBuffers();
+	void initDescriptorSetBuffers();
 
 	VkPipeline imguipipeline;
 	VkPipelineLayout guilayout;

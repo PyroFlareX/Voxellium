@@ -7,7 +7,6 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass* rpass, Vk
 	bs::vk::createCommandPool(*p_device, m_pool);
 	m_renderpass = rpass;
 
-
 	//Renderlists for secondary cmd buffers
 	m_renderlist.resize(10);
 
