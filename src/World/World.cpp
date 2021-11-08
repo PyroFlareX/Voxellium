@@ -13,7 +13,7 @@ World::World()
 
 	//Generate some chunks
 	constexpr auto min = 0;
-	constexpr auto max = 4;
+	constexpr auto max = 1;
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{

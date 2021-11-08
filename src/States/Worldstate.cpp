@@ -1,12 +1,11 @@
 #include "Worldstate.h"
 
-#include <mutex>
-
-std::mutex g_obj_guard;
+// #include <mutex>
+// std::mutex g_obj_guard;
 
 Worldstate::Worldstate(Application& app) : Basestate(app)
 {
-	m_playerView.pos = {0.0f, 0.0f, -2.0f};
+	m_playerView.pos = {0.0f, 2.0f, -2.0f};
 	m_playerView.rot = {0.0f, 180.0f, 0.0f};
 	m_playerView.scale = {0.0f, 0.0f, 0.0f};
 	m_playerView.origin = {0.0f, 0.0f, 0.0f};

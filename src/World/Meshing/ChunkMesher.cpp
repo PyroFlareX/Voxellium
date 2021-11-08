@@ -277,7 +277,7 @@ static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xy
 	chunkmesh.vertices.emplace_back(v4);
 
 	//Generic Quad Indices:
-	static const std::vector<u32> quad_indices
+	const static std::vector<u32> quad_indices
 	{
 		0, 1, 2,
 		2, 3, 0
