@@ -3,7 +3,6 @@
 #include <imgui.h>
 #include <algorithm>
 
-
 constexpr int numDescriptors = 2;
 
 Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
@@ -24,12 +23,18 @@ Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
 	bs::asset_manager->addTexture(texture, 1);
 
 	//Generate a special image: (diagonal purple)
-	auto notFoundImg(imgblank);
+	constexpr bs::u8vec4 purple = bs::u8vec4(255, 0, 255, 255);
+	constexpr bs::u8vec4 cyan = bs::u8vec4(64, 225, 205, 255);
+	bs::Image notFoundImg(imgblank.getSize(), cyan);
 	{
-		constexpr bs::u8vec4 purple = bs::u8vec4(255, 0, 255, 255);
-		for(int y = 0; y < notFoundImg.getSize().y; ++y)
+		//This assumes a square img
+		const auto numColumns = notFoundImg.getSize().y;
+		for(auto y = 0; y < numColumns; y += 1)
 		{
-			for(int x = 0; x < (notFoundImg.getSize().x - y); ++x)
+			//Calc the number of pixels to set on this row
+			auto lengthToSet = numColumns - y;
+
+			for(auto x = 0; x < lengthToSet; x+=1)
 			{
 				notFoundImg.setPixel(x, y, purple);
 			}

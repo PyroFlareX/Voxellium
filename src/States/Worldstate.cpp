@@ -6,8 +6,8 @@ std::mutex g_obj_guard;
 
 Worldstate::Worldstate(Application& app) : Basestate(app)
 {
-	m_playerView.pos = {0.0f, 0.0f, 0.0f};
-	m_playerView.rot = {0.0f, 0.0f, 0.0f};
+	m_playerView.pos = {0.0f, 0.0f, -2.0f};
+	m_playerView.rot = {0.0f, 180.0f, 0.0f};
 	m_playerView.scale = {0.0f, 0.0f, 0.0f};
 	m_playerView.origin = {0.0f, 0.0f, 0.0f};
 }
@@ -67,12 +67,12 @@ void Worldstate::input(float dt)
 void Worldstate::update(float dt)
 {
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
-	ImGui::SetNextWindowSize({100.0f, 50.0f});
+	ImGui::SetNextWindowSize({250.0f, 75.0f});
 	if(ImGui::Begin("Debug UI", nullptr, windowflag))
 	{
 		const auto& cam = app.getCamera();
-		ImGui::Text("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
-		ImGui::Text("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
+		ImGui::Text("Player Pos:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
+		ImGui::Text("Player Rot:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
 	}
 	ImGui::End();
 
