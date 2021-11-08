@@ -15,35 +15,33 @@ Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
 	bs::asset_manager->addTexture(font, 0);	
 	
 	//Blank white img
-	bs::Image imgblank;
-	imgblank.create(32, 32, bs::u8vec4(255));
+	const bs::Image imgblank({32, 32}, bs::u8vec4(255));
 
-// Duping img
+	// Duping img
 	bs::vk::Texture texture(device);
 	texture.loadFromImage(imgblank);
 	//Adding black white image for texture index 1
 	bs::asset_manager->addTexture(texture, 1);
-//Img
 
 	//Generate a special image: (diagonal purple)
+	auto notFoundImg(imgblank);
 	{
 		constexpr bs::u8vec4 purple = bs::u8vec4(255, 0, 255, 255);
-		for(int y = 0; y < imgblank.getSize().y; ++y)
+		for(int y = 0; y < notFoundImg.getSize().y; ++y)
 		{
-			for(int x = 0; x < (imgblank.getSize().x - y); ++x)
+			for(int x = 0; x < (notFoundImg.getSize().x - y); ++x)
 			{
-				imgblank.setPixel(x, y, purple);
+				notFoundImg.setPixel(x, y, purple);
 			}
 		}
 	}
 	bs::vk::Texture textureblank(device);
-	textureblank.loadFromImage(imgblank);
+	textureblank.loadFromImage(notFoundImg);
 	//Adding a diagonal purple texture for index 2
 	bs::asset_manager->addTexture(textureblank, 2);
 
 	//For IMGUI
 	initGUI();
-
 	//Init the renderpass
 	initRenderpass();
 	//Init the command pool and the cmd buffer

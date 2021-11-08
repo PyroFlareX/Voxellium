@@ -8,7 +8,7 @@ bs::vk::Texture::Texture(bs::Device* device)
 	
 }
 
-void bs::vk::Texture::loadFromImage(bs::Image& img)
+void bs::vk::Texture::loadFromImage(const bs::Image& img)
 {
 	VkSamplerCreateInfo samplerInfo = {};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -33,8 +33,8 @@ void bs::vk::Texture::loadFromImage(bs::Image& img)
 	image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image.imageType = VK_IMAGE_TYPE_2D;
 	image.format = VK_FORMAT_R8G8B8A8_SRGB;
-	image.extent.height = (int)img.getSize().y;
-	image.extent.width = (int)img.getSize().x;
+	image.extent.height = (u32)img.getSize().y;
+	image.extent.width = (u32)img.getSize().x;
 	image.extent.depth = 1;
 	image.mipLevels = 1;
 	image.arrayLayers = 1;
@@ -51,12 +51,20 @@ void bs::vk::Texture::loadFromImage(bs::Image& img)
 	size_t sizeImg = sizeof(bs::u8vec4) * (int)img.getSize().x * (int)img.getSize().y;
 	VkDeviceSize sizeDev = sizeImg;
 
+	//Copy the address to this ptr
+	void* dataPtr = nullptr;
+	{
+		const auto* imgptr = img.getPixelsPtr();
+		memcpy(&dataPtr, &imgptr, sizeof(imgptr));
+		assert(dataPtr == imgptr);
+	}
+
 	bs::vk::BufferDescription bufdesc;
 	bufdesc.bufferType = bs::vk::TRANSFER_BUFFER;
 	bufdesc.dev = p_device;
 	bufdesc.size = sizeImg;
 	bufdesc.stride = 4;
-	bufdesc.bufferData = img.getPixelsPtr();
+	bufdesc.bufferData = dataPtr;
 	bs::vk::Buffer stagingbuffer(bufdesc);
 	stagingbuffer.uploadBuffer();
 
@@ -100,7 +108,6 @@ void bs::vk::Texture::loadFromImage(bs::Image& img)
 
 		//copy the buffer into the image
 		vkCmdCopyBufferToImage(cmd, stagingbuffer.getAPIResource(), textureImg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-
 
 		VkImageMemoryBarrier imageBarrier_toReadable = imageBarrier_toTransfer;
 

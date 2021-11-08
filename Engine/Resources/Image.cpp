@@ -18,9 +18,14 @@ namespace bs
 		create(m_size.x, m_size.y, u8vec4(255, 255, 255, 255));
 	}
 
-	Image::~Image()
+	Image::Image(const vec2i& size, const u8vec4& color)	:	m_size(size), m_pixels(size.x * size.y, color)
 	{
+		//this essetially calls create() implicitly via the initializers
+	}
 
+	Image::Image(const vec2i& size, const u8vec4* pixels)	:	m_size(size), m_pixels(pixels, pixels + size.x * size.y)
+	{
+		//this essetially calls create() implicitly via the initializers
 	}
 
 	//@TODO: Implement this ASAP
@@ -40,7 +45,6 @@ namespace bs
 	void Image::create(unsigned int x, unsigned int y, const u8vec4* pixels)
 	{
 		m_size = vec2(x, y);
-
 		std::vector<u8vec4> newPixels(pixels, pixels + x * y);
 		m_pixels.swap(newPixels);
 	}
@@ -83,7 +87,7 @@ namespace bs
 		return true;
 	}
 
-	bool Image::saveToFile(const std::string& filename)
+	bool Image::saveToFile(const std::string& filename) const
 	{
 		if(stbi_write_bmp(filename.c_str(), m_size.x, m_size.y, STBI_rgb_alpha, m_pixels.data()) != 0)
 		{
@@ -101,6 +105,11 @@ namespace bs
 	u8vec4* Image::getPixelsPtr()
 	{
 		return &m_pixels[0];
+	}
+
+	const u8vec4* Image::getPixelsPtr() const
+	{
+		return m_pixels.data();
 	}
 
 	void Image::setPixel(unsigned int x, unsigned int y, const u8vec4& color) noexcept
