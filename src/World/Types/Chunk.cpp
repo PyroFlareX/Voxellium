@@ -26,39 +26,25 @@ constexpr block_t air_id = 0;
 Chunk::Chunk(pos_xyz pos)	:	m_pos(pos), m_has_mesh(false), m_needs_mesh(true), m_empty(true), m_mesh({})
 {
 	m_chunk_layout.fill(air_id);
-	//Above is same as this:
-	/*for(auto z = 0; z < CHUNK_SIZE; ++z)
-	{
-		for(auto y = 0; z < CHUNK_SIZE; ++z)
-		{
-			for(auto x = 0; z < CHUNK_SIZE; ++z)
-			{
-				// const auto index = x + (y * CHUNK_SIZE) + (z * CHUNK_AREA);	// OR
-				// const index = toIndex(toIndex({x, y, z}));	// OR
-				const auto index = toIndex(x, y, z);
-				m_chunk_layout[index] = air_id;
-			}
-		}	
-	}*/
 
 	m_empty = checkIfEmpty();
 }
 
 block_t Chunk::getBlockAt(const pos_xyz& local_position) const
 {
-	assert(this->isValid(local_position));
+	assert(isValid(local_position));
 	return m_chunk_layout.at(toIndex(local_position));
 }
 
 block_t& Chunk::getBlockAt(const pos_xyz& local_position)
 {
-	assert(this->isValid(local_position));
+	assert(isValid(local_position));
 	return m_chunk_layout.at(toIndex(local_position));
 }
 
 void Chunk::setBlockAt(const pos_xyz& local_position, block_t block)
 {
-	assert(this->isValid(local_position));
+	assert(isValid(local_position));
 	m_chunk_layout[toIndex(local_position)] = block;
 	m_needs_mesh = true;
 }

@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <optional>
 
 #include "Types/Chunk.h"
 #include "Meshing/ChunkMesher.h"
@@ -13,10 +14,10 @@ public:
 	World();
 	~World();
 
-	block_t getBlockAt(const pos_xyz& world_pos) const noexcept;
-	void setBlockAt(const pos_xyz& world_pos, block_t block) noexcept;
+	block_t getBlockAt(const pos_xyz& world_pos) const;
+	bool setBlockAt(const pos_xyz& world_pos, block_t block);
 
-	const Chunk& getChunkAt(const pos_xyz& chunk_coords_pos) const noexcept;
+	//const std::optional<Chunk> getChunkAt(const pos_xyz& chunk_coords_pos) const noexcept;
 	Chunk& getChunkAt(const pos_xyz& chunk_coords_pos);
 
 	std::shared_ptr<ChunkMap> getWorldMap();

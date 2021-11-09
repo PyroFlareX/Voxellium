@@ -16,8 +16,6 @@ class Chunk	:	public bs::NonCopyable
 {
 public:
 	Chunk(pos_xyz pos);
-	/*Chunk(const Chunk&) = delete;	//No copying
-	Chunk(Chunk&&) = default;	//Move only*/
 
 	//Get the block id for the block at the given position
 	block_t getBlockAt(const pos_xyz& local_position) const;
@@ -34,13 +32,14 @@ public:
 	//Set the flag so that only one remesh on this is active
 	void setRemeshingFlag();
 
-	using chunk_mesh_t = std::optional<bs::Mesh>;
-
 	//to reset the mesh for the chunk
 	void setMesh(bs::Mesh&& new_mesh);
-	
+
+	using chunk_mesh_t = std::optional<bs::Mesh>;
 	const chunk_mesh_t& getChunkMesh() const;
 
+	//Checks whether empty
+	bool checkIfEmpty() const noexcept;
 
 private:
 	/// Members
@@ -58,8 +57,4 @@ private:
 	//Set when the chunk needs to be updated too (?)
 	//Whether the chunk wants a new mesh built
 	bool m_needs_mesh;
-
-	/// Functions
-	//Checks whether empty
-	bool checkIfEmpty() const noexcept;
 };

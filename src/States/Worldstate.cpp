@@ -1,8 +1,5 @@
 #include "Worldstate.h"
 
-// #include <mutex>
-// std::mutex g_obj_guard;
-
 Worldstate::Worldstate(Application& app) : Basestate(app)
 {
 	m_playerView.pos = {0.0f, 2.0f, -2.0f};
@@ -74,38 +71,6 @@ void Worldstate::update(float dt)
 		ImGui::Text("Player Rot:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
 	}
 	ImGui::End();
-
-	//Chunk update list
-	auto* world = &m_world;
-	for(const auto& [chunk_pos, chunk] : *m_world.getWorldMap())
-	{
-		if(chunk.isEmpty())
-		{
-			continue;
-		}
-		if(chunk.needsMesh())
-		{
-			const auto makeChunkMesh = jobSystem.createJob([chunk_pos, world](Job j)
-			{
-				auto* w = world;
-				auto& chunk = w->getChunkAt(chunk_pos);
-				generateMeshFor(*w, chunk);
-				
-				const auto& mesh = chunk.getChunkMesh();
-				if(!mesh.has_value())
-				{
-					//return;
-				}
-				else
-				{
-					bs::asset_manager->addModel(bs::vk::Model(*mesh, bs::asset_manager->getTextureMutable(0).getDevice()),
-						std::string("chunk_" + std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + 
-							std::to_string(chunk_pos.z)));
-				}
-			});
-			//jobSystem.schedule(makeChunkMesh, false);
-		}
-	}
 }
 
 void Worldstate::lateUpdate(Camera& cam)
@@ -114,28 +79,47 @@ void Worldstate::lateUpdate(Camera& cam)
 }
 
 void Worldstate::render(Renderer& renderer)
-{		
+{
 	for (auto& obj : m_gameObjects)
 	{
 		obj.getCurrentTransform();
 		renderer.drawObject(obj);
 	}
 
-	static bool ran = false;
-	const pos_xyz chunk_pos(0, 0, 0);
-	if(m_world.getChunkAt(chunk_pos).getChunkMesh().has_value() && !ran)
+	for(const auto& [chunk_pos, chunk] : *m_world.getWorldMap())
 	{
-		bs::Transform t;
-		t.pos = chunk_pos * CHUNK_SIZE;
-		std::string modelname("chunk_" + 
-			std::to_string(chunk_pos.x) + 
-			std::to_string(chunk_pos.y) + 
-			std::to_string(chunk_pos.z));
+		/*if(chunk.isEmpty())
+		{
+			continue;
+		}*/
+		if(chunk.getChunkMesh().has_value())
+		{
+			bs::Transform t;
+			t.pos = chunk_pos * CHUNK_SIZE;
+			const std::string modelname("chunk_" + 
+				std::to_string(chunk_pos.x) + 
+				std::to_string(chunk_pos.y) + 
+				std::to_string(chunk_pos.z));
 
-		m_gameObjects.emplace_back(t, modelname);
-		m_gameObjects.back().material.texture_id = 2;
+			bs::GameObject chunk_obj(t, modelname);
+			chunk_obj.material.texture_id = 2;
 
-		std::cout << "Added chunk at (" << chunk_pos.x << ", " << chunk_pos.y << ", " << chunk_pos.z << ")\n";
-		ran = true;
+			renderer.drawObject(chunk_obj);
+			std::cout << "Added chunk at (" << chunk_pos.x << ", " << chunk_pos.y << ", " << chunk_pos.z << ")\n";
+		}
+		else
+		{
+			auto* world = &m_world;
+			const auto generateMesh = jobSystem.createJob([world, chunk_pos](Job j)
+			{
+				auto& chunk = world->getChunkAt(chunk_pos);
+				//Generate mesh
+				generateMeshFor(*world, chunk);
+				//Upload mesh
+				bs::asset_manager->addModel(bs::vk::Model(*chunk.getChunkMesh(), bs::asset_manager->getTextureMutable(0).getDevice()),
+							std::string("chunk_" + std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + std::to_string(chunk_pos.z)));
+			});
+			jobSystem.schedule(generateMesh, false);
+		}
 	}
 }

@@ -202,13 +202,14 @@ static block_t getBlockAt(const pos_xyz& rel_to_chunk, const Chunk& chunk, const
 	const auto offset = OOBChunkOffset(rel_to_chunk);
 	if((offset.x + offset.y + offset.z) == 0)
 	{
-		chunk.getBlockAt(rel_to_chunk);
+		return chunk.getBlockAt(rel_to_chunk);
 	}
-
-	const auto& otherChunk = world.getChunkAt(chunk.getChunkPos() + offset);
-	const auto newRelToChunk = rel_to_chunk - (offset * CHUNK_SIZE);
-
-	return otherChunk.getBlockAt(newRelToChunk);
+	else
+	{
+		return 0;
+	}
+	//World coords
+	return world.getBlockAt((chunk.getChunkPos() * CHUNK_SIZE) + rel_to_chunk);
 }
 
 static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk)
