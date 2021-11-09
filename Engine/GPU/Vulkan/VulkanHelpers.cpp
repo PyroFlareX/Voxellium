@@ -278,13 +278,13 @@ namespace bs::vk
 	{
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window, &width, &height);
-		while (width == 0 || height == 0) {
+		while (width == 0 || height == 0) 
+		{
 			glfwGetFramebufferSize(window, &width, &height);
 			glfwWaitEvents();
 		}
 
 		vkDeviceWaitIdle(device);
-
 	}
 
 	void createRenderPass(VkDevice& device, SwapChainDetails& Swapdetails, VkRenderPass& renderPass)
@@ -325,7 +325,8 @@ namespace bs::vk
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+		{
 			throw std::runtime_error("failed to create render pass!");
 		}
 	}
@@ -365,7 +366,6 @@ namespace bs::vk
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
-
 
 		VkExtent2D extent = { };
 		extent.height = viewportheight;
@@ -495,22 +495,27 @@ namespace bs::vk
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+		const VkExtent2D extent
+		{ 
+			.width = viewportwidth,
+			.height = viewportheight,
+		};
 
-		VkExtent2D extent = { };
-		extent.height = viewportheight;
-		extent.width = viewportwidth;
+		const VkViewport viewport
+		{
+			.x = 0.0f,
+			.y = 0.0f,
+			.width = static_cast<float>(extent.width),
+			.height = static_cast<float>(extent.height),
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
 
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(extent.width);
-		viewport.height = static_cast<float>(extent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = extent;
+		const VkRect2D scissor
+		{
+			.offset = { 0, 0 },
+			.extent = extent,
+		};
 
 		VkPipelineViewportStateCreateInfo viewportState{};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -562,7 +567,7 @@ namespace bs::vk
 		pipelineLayoutInfo.pPushConstantRanges = &constants;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-		if (vkCreatePipelineLayout(device.getDevice(), &pipelineLayoutInfo, nullptr, &playout) != VK_SUCCESS) 
+		if(vkCreatePipelineLayout(device.getDevice(), &pipelineLayoutInfo, nullptr, &playout) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
@@ -594,7 +599,7 @@ namespace bs::vk
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		if (vkCreateGraphicsPipelines(device.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+		if(vkCreateGraphicsPipelines(device.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
@@ -905,8 +910,10 @@ namespace bs::vk
 	{
 		swapdetails.swapChainFramebuffers.resize(swapdetails.swapChainImageViews.size());
 
-		for (size_t i = 0; i < swapdetails.swapChainImageViews.size(); i++) {
-			VkImageView attachments[] = {
+		for (size_t i = 0; i < swapdetails.swapChainImageViews.size(); i++) 
+		{
+			VkImageView attachments[] = 
+			{
 				swapdetails.swapChainImageViews[i]
 			};
 
@@ -919,7 +926,8 @@ namespace bs::vk
 			framebufferInfo.height = swapdetails.swapChainExtent.height;
 			framebufferInfo.layers = 1;
 
-			if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapdetails.swapChainFramebuffers[i]) != VK_SUCCESS) {
+			if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapdetails.swapChainFramebuffers[i]) != VK_SUCCESS)
+			{
 				throw std::runtime_error("failed to create framebuffer!");
 			}
 		}
@@ -1026,24 +1034,26 @@ namespace bs::vk
 		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-		int i = 0;
+		auto i = 0;
 		for (const auto& queueFamily : queueFamilies) {
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+			{
 				indices.graphicsFamily = i;
 			}
 
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
 
-			if (presentSupport) {
+			if (presentSupport) 
+			{
 				indices.presentFamily = i;
 			}
-
-			if (indices.isComplete()) {
+			if (indices.isComplete()) 
+			{
 				break;
 			}
 
-			i++;
+			i += 1;
 		}
 
 		return indices;
@@ -1051,13 +1061,12 @@ namespace bs::vk
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device)
 	{
 		SwapChainSupportDetails details;
-
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_surface, &details.capabilities);
-
 		uint32_t formatCount;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_surface, &formatCount, nullptr);
 
-		if (formatCount != 0) {
+		if (formatCount != 0) 
+		{
 			details.formats.resize(formatCount);
 			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_surface, &formatCount, details.formats.data());
 		}
@@ -1065,7 +1074,8 @@ namespace bs::vk
 		uint32_t presentModeCount;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_surface, &presentModeCount, nullptr);
 
-		if (presentModeCount != 0) {
+		if (presentModeCount != 0) 
+		{
 			details.presentModes.resize(presentModeCount);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_surface, &presentModeCount, details.presentModes.data());
 		}
@@ -1136,12 +1146,10 @@ namespace bs::vk
 
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-		if (validationlayers) 
+		if(validationlayers) 
 		{
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
-
-
 		return extensions;
 	}
 
@@ -1150,8 +1158,6 @@ namespace bs::vk
 		QueueFamilyIndices indices = findQueueFamilies(device);
 
 		bool extensionsSupported = checkDeviceExtensionSupport(device);
-
-		
 
 		bool swapChainAdequate = false;
 		if (extensionsSupported) 

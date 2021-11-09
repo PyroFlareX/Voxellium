@@ -67,7 +67,6 @@ struct SwapChainDetails
 };
 
 
-
 namespace bs::vk
 {
 	//GLOBALS
@@ -104,7 +103,7 @@ namespace bs::vk
 	void recreateSwapChain(GLFWwindow* window, VkDevice device);
 
 	void createRenderPass(VkDevice& device, SwapChainDetails& Swapdetails, VkRenderPass& renderPass);
-	void createGraphicsPipeline(VkRenderPass& renderPass,/* SwapChainDetails& swapdetails, */VkPipelineLayout& pipelineLayout, VkPipeline& graphicsPipeline, VkDevice device);
+	void createGraphicsPipeline(VkRenderPass& renderPass, VkPipelineLayout& pipelineLayout, VkPipeline& graphicsPipeline, VkDevice device);
 
 	void createUIPipeline(bs::Device& device, VkPipeline& pipeline, VkRenderPass& rpass, VkPipelineLayout& playout, VkDescriptorSetLayout& dlayout);
 
