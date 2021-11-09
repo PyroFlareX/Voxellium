@@ -80,17 +80,19 @@ void GeneralRenderer::render(Camera& cam)
 		
 		vkCmdBindPipeline(m_renderlist.at(i), VK_PIPELINE_BIND_POINT_GRAPHICS, gfx);
 		
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = extent.width;
-		viewport.height = extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		const VkViewport viewport {
+			.x = 0.0f,
+			.y = 0.0f,
+			.width = (float)extent.width,
+			.height = (float)extent.height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
 
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = extent;
+		const VkRect2D scissor {
+			.offset = { 0, 0},
+			.extent = extent,
+		};
 
 		vkCmdSetViewport(m_renderlist.at(i), 0, 1, &viewport);
 		vkCmdSetScissor(m_renderlist.at(i), 0, 1, &scissor);

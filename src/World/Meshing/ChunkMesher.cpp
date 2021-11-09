@@ -1,86 +1,22 @@
 #include "ChunkMesher.h"
-
-#include "../World.h"
-
-#include <Resources/Mesh.h>
-#include <memory>
-#include <array>
-#include <iostream>
+#include "MeshingData.h"
 
 //Helper functions
 constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept;
+constexpr static inline u32 toIndex(pos_xyz block_pos) noexcept
+{
+	return block_pos.x + (block_pos.y * CHUNK_SIZE) + (block_pos.z * CHUNK_AREA);
+}
 constexpr static inline pos_xyz fromIndex(u32 index) noexcept;
-
 static block_t getBlockAt(const pos_xyz& rel_to_chunk, const Chunk& chunk, const World& world);
 static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk);
-
-static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xyz& direction, const std::vector<u32>& face);
-
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xyz& direction, const std::array<u32, 6>& baked_face);
 static inline bool tempisTransparent(block_t b)
 {
 	return (b == 0);
 }
 
-// List out the vertices, indicies, UV coords, etc for the models
-// for the blocks
-// In the future, maybe have this be on the GPU side, and use a compute shader?
-
-//Cube coords
-const std::vector<bs::vec3> vertices =
-{
-	//8 vertices, one per corner
-	//Starting with 0,0,0 or left bottom front
-	{0.0f, 0.0f, 0.0f},	//0	//Left,		Bottom,	Front
-	{1.0f, 0.0f, 0.0f},	//1	//Right,	Bottom,	Front
-	{1.0f, 1.0f, 0.0f},	//2	//Right,	Top,	Front
-	{0.0f, 1.0f, 0.0f},	//3	//Left,		Top,	Front
-	{0.0f, 0.0f, 1.0f},	//4	//Left,		Bottom,	Back
-	{1.0f, 0.0f, 1.0f},	//5	//Right,	Bottom,	Back
-	{1.0f, 1.0f, 1.0f},	//6	//Right,	Top,	Back
-	{0.0f, 1.0f, 1.0f}	//7	//Left,		Top,	Back
-	//8 total
-};
-//Cube faces
-//Outside is counter-clockwise
-const std::vector<u32> front
-{
-	0, 1, 2,
-	2, 3, 0
-};
-const std::vector<u32> back
-{
-	5, 4, 7,
-	7, 6, 5
-};
-const std::vector<u32> top
-{
-	3, 2, 6,
-	6, 7, 3
-};
-const std::vector<u32> bottom
-{
-	1, 0, 4,
-	4, 5, 1
-};
-const std::vector<u32> left
-{
-	0, 3, 7,
-	7, 4, 0
-};
-const std::vector<u32> right
-{
-	2, 1, 5,
-	5, 6, 2
-};
-
-// Some constants
-constexpr pos_xyz UP(0, 1, 0);
-constexpr pos_xyz DOWN(0, -1, 0);
-constexpr pos_xyz LEFT(-1, 0, 0);
-constexpr pos_xyz RIGHT(1, 0, 0);
-constexpr pos_xyz FRONT(0, 0, -1);
-constexpr pos_xyz BACK(0, 0, 1);
-constexpr pos_xyz NONE(0, 0, 0);
+//IMPLEMENTATIONS FOR THE HEADER
 
 void generateMeshFor(const World& world, Chunk& chunk)
 {
@@ -133,7 +69,7 @@ void generateMeshFor(const World& world, Chunk& chunk)
 				//If the current block is transparent, skip it
 				if(tempisTransparent(block))
 				{
-					//continue;
+					continue;
 				}
 
 				//Check if each face should be rendered
@@ -185,6 +121,118 @@ void generateMeshFor(const World& world, Chunk& chunk)
 
 	//Now for the mesh to go to the owning chunk
 	chunk.setMesh(std::move(chunkMesh));
+}
+
+//Meshing order should be like this:
+/**
+ * All front, back, top, bottom, left, then right
+ * For the x, then y, then z
+ * So:
+ * 0-4096 is the front faces
+ * 
+**/
+//Get the indices of the block face for block `blockCoord` for the `side`
+template<pos_xyz blockCoord, dir Side>
+constexpr std::array<u16, 6> getIndicesFor()
+{
+	constexpr u16 vertOffsetPerSides = 4 * (1 + toIndex({15, 15, 15}));	//4096 (num blocks) * 4 (numVerts on a side)
+	u16 indexOffsetThing = 0;
+	switch (Side)
+	{
+	case dir::FRONT:
+		indexOffsetThing = 0 * vertOffsetPerSides;
+		break;
+	case dir::BACK:
+		indexOffsetThing = 1 * vertOffsetPerSides;
+		break;
+	case dir::TOP:
+		indexOffsetThing = 2 * vertOffsetPerSides;
+		break;
+	case dir::BOTTOM:
+		indexOffsetThing = 3 * vertOffsetPerSides;
+		break;
+	case dir::LEFT:
+		indexOffsetThing = 4 * vertOffsetPerSides;
+		break;
+	case dir::RIGHT:
+		indexOffsetThing = 5 * vertOffsetPerSides;
+		break;
+	default:
+		//THERE WAS AN ERROR
+		//RETURN THE DEFAULT?
+		break;
+	}
+
+	//Get the four vertex offsets for the face at `blockCoord` and direction `Side`
+	//Pretty sure its=>: index(blockCoord) * 4
+	constexpr u16 baseIndex = (toIndex(blockCoord) * 4) + indexOffsetThing;
+
+	return std::array<u16, 6> (baseIndex + front[0], baseIndex + front[1], baseIndex + front[2],
+						baseIndex + front[3], baseIndex + front[4], baseIndex + front[5]);
+}
+
+const std::vector<bs::vec3>& createFullChunkMesh()
+{
+	static std::vector<bs::vec3> meshVerts;
+	if(!meshVerts.empty())
+	{
+		return meshVerts;	//Return it if already generated
+	}
+
+	for(auto side = 0; side < 6; side+=1)
+	{
+		std::array<u32, 6> currentFace;
+		switch (side)
+		{
+		case 0:
+			currentFace = front;
+			break;
+		case 1:
+			currentFace = back;
+			break;
+		case 2:
+			currentFace = top;
+			break;
+		case 3:
+			currentFace = bottom;
+			break;
+		case 4:
+			currentFace = left;
+			break;
+		case 5:
+			currentFace = right;
+			break;
+		
+		default:
+			throw "SIDE CALCULATION BROKE!!!";
+			break;
+		}
+		//Iterate through each block
+		for(auto z = 0; z < CHUNK_SIZE; z+=1)
+		{
+			for(auto y = 0; y < CHUNK_SIZE; y+=1)
+			{
+				for(auto x = 0; x < CHUNK_SIZE; x+=1)
+				{
+					const bs::vec3 coords(x, y, z);
+
+					//Order for vertices is starting bottom left, then counter clockwise
+					const auto& v1 = vertices[currentFace[BOTTOM_LEFT]];
+					const auto& v2 = vertices[currentFace[BOTTOM_RIGHT]];
+					const auto& v3 = vertices[currentFace[TOP_RIGHT]];
+					const auto& v4 = vertices[currentFace[TOP_LEFT]];
+
+					//Add the verticies to the vector
+					meshVerts.emplace_back(v1 + coords);
+					meshVerts.emplace_back(v2 + coords);
+					meshVerts.emplace_back(v3 + coords);
+					meshVerts.emplace_back(v4 + coords);
+				}//x
+			}//y
+		}//z
+	}//Faces
+
+	return meshVerts;
 }
 
 constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept
@@ -244,7 +292,7 @@ static pos_xyz OOBChunkOffset(pos_xyz rel_to_chunk)
 	}
 }
 
-static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xyz& direction, const std::vector<u32>& baked_face)
+static void makeFace(bs::Mesh& chunkmesh, const pos_xyz& block_pos, const pos_xyz& direction, const std::array<u32, 6>& baked_face)
 {
 	constexpr bs::Vertex basicVert = 
 	{
