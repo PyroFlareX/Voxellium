@@ -12,7 +12,7 @@ public:
 	Renderer(bs::Device* device);
 	~Renderer();
 
-	void drawObject(bs::GameObject& entity);
+	void drawObject(const bs::GameObject& entity);
 	//NOT DONE DO NOT USE
 	void drawText();
 

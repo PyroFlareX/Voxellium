@@ -8,7 +8,7 @@ class GeneralRenderer
 public:
 	GeneralRenderer(bs::Device* mainDevice, VkRenderPass* rpass, VkDescriptorSetLayout desclayout);
 
-	void addInstance(bs::GameObject& entity);
+	void addInstance(const bs::GameObject& entity);
 	void render(Camera& cam);
 
 	void clearQueue();

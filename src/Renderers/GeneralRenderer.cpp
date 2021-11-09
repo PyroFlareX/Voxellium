@@ -37,7 +37,7 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass* rpass, Vk
 	jobSystem.wait();
 }
 
-void GeneralRenderer::addInstance(bs::GameObject& entity)
+void GeneralRenderer::addInstance(const bs::GameObject& entity)
 {
 	//Hack/Workaround to avoid cyclic dependency/init of the renderpass
 	if (!firstrun)

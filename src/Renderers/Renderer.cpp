@@ -124,7 +124,7 @@ void Renderer::initGUI()
 	}
 }
 
-void Renderer::drawObject(bs::GameObject& entity)
+void Renderer::drawObject(const bs::GameObject& entity)
 {
 	m_generalRenderer->addInstance(entity);
 }
