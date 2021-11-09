@@ -6,7 +6,8 @@
 class GeneralRenderer
 {
 public:
-	GeneralRenderer(bs::Device* mainDevice, VkRenderPass* rpass, VkDescriptorSetLayout desclayout);
+	GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout);
+	~GeneralRenderer();
 
 	void addInstance(const bs::GameObject& entity);
 	void render(Camera& cam);
@@ -14,21 +15,16 @@ public:
 	void clearQueue();
 
 	std::vector<VkCommandBuffer>& getRenderlists();
-	
-	~GeneralRenderer();
 private:
-	//Hack bool
-	bool firstrun = false;
-
 	std::vector<bs::GameObject> m_queue;
 	
 	// Pipeline Stuff
 
-	VkPipelineLayout playout;
-	VkPipeline gfx;
-	VkCommandBufferBeginInfo beginInfo{};
-	VkCommandBufferInheritanceInfo inheritanceInfo{};
-	VkRenderPass* m_renderpass;
+	VkPipelineLayout m_pipelineLayout;
+	VkPipeline m_genericPipeline;
+	VkCommandBufferBeginInfo m_beginInfo;
+	VkCommandBufferInheritanceInfo m_inheritanceInfo;
+	VkRenderPass& m_renderpass;
 
 	// Vulkan Stuff
 	

@@ -24,8 +24,8 @@ namespace bs::vk
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
 
-	int viewportwidth = 1280;
-	int viewportheight = 720;
+	u32 viewportwidth = 1280;
+	u32 viewportheight = 720;
 
 
 	void createInstance(const std::string& name)
@@ -932,7 +932,8 @@ namespace bs::vk
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-		if (vkCreateCommandPool(device.getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+		if(vkCreateCommandPool(device.getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) 
+		{
 			throw std::runtime_error("failed to create command pool!");
 		}
 	}

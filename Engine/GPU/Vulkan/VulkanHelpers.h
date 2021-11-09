@@ -75,8 +75,8 @@ namespace bs::vk
 
 	//For Window Resizing
 	
-	extern int viewportwidth;
-	extern int viewportheight;
+	extern u32 viewportwidth;
+	extern u32 viewportheight;
 
 	extern VkInstance m_instance;
 	extern VkSurfaceKHR m_surface;

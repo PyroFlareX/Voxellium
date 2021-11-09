@@ -60,7 +60,7 @@ Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
 	initDescriptorSetBuffers();
 
 	//Create General Renderer
-	m_generalRenderer = std::make_unique<GeneralRenderer>(device, &renderpassdefault, desclayout);
+	m_generalRenderer = std::make_unique<GeneralRenderer>(device, renderpassdefault, desclayout);
 	//Create UI Renderer Pipeline And the Renderer
 	bs::vk::createUIPipeline(*device, imguipipeline, renderpassdefault, guilayout, desclayout);
 	m_UIRenderer = std::make_unique<UIRenderer>(device, imguipipeline, guilayout);

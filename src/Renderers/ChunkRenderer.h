@@ -6,12 +6,26 @@
 class ChunkRenderer
 {
 public:
-	ChunkRenderer();
-	~ChunkRenderer() = default;
+	ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout);
+	~ChunkRenderer();
 
 	
 private:
 	void generateChunkData();
 
 	std::shared_ptr<bs::vk::Buffer> m_chunkbuffer;
+
+	// Pipeline Stuff
+
+	VkPipelineLayout m_pipelineLayout;
+	VkPipeline m_pipeline;
+	VkCommandBufferBeginInfo m_beginInfo;
+	VkCommandBufferInheritanceInfo m_inheritanceInfo;
+	VkRenderPass& m_renderpass;
+
+	// Vulkan Stuff
+	
+	VkCommandPool m_pool;
+	std::vector<VkCommandBuffer> m_renderlist;
+	bs::Device* p_device;
 };
