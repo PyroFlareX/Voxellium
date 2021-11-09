@@ -1,6 +1,8 @@
 #include "ChunkMesher.h"
 #include "MeshingData.h"
 
+#include <Resources/Mesh.h>
+
 //Helper functions
 constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept;
 constexpr static inline u32 toIndex(pos_xyz block_pos) noexcept

@@ -3,7 +3,6 @@
 #include <array>
 
 #include "../World.h"
-#include <Resources/Mesh.h>
 
 
 // List out the vertices, indicies, UV coords, etc for the models
@@ -11,18 +10,18 @@
 // In the future, maybe have this be on the GPU side, and use a compute shader?
 
 //Cube coords
-const std::vector<bs::vec3> vertices =
+constexpr std::array<bs::vec3, 8> vertices
 {
 	//8 vertices, one per corner
 	//Starting with 0,0,0 or left bottom front
-	{0.0f, 0.0f, 0.0f},	//0	//Left,		Bottom,	Front
-	{1.0f, 0.0f, 0.0f},	//1	//Right,	Bottom,	Front
-	{1.0f, 1.0f, 0.0f},	//2	//Right,	Top,	Front
-	{0.0f, 1.0f, 0.0f},	//3	//Left,		Top,	Front
-	{0.0f, 0.0f, 1.0f},	//4	//Left,		Bottom,	Back
-	{1.0f, 0.0f, 1.0f},	//5	//Right,	Bottom,	Back
-	{1.0f, 1.0f, 1.0f},	//6	//Right,	Top,	Back
-	{0.0f, 1.0f, 1.0f}	//7	//Left,		Top,	Back
+	bs::vec3{ 0.0f, 0.0f, 0.0f },	//0	//Left,		Bottom,	Front
+	{ 1.0f, 0.0f, 0.0f },	//1	//Right,	Bottom,	Front
+	{ 1.0f, 1.0f, 0.0f },	//2	//Right,	Top,	Front
+	{ 0.0f, 1.0f, 0.0f },	//3	//Left,		Top,	Front
+	{ 0.0f, 0.0f, 1.0f },	//4	//Left,		Bottom,	Back
+	{ 1.0f, 0.0f, 1.0f },	//5	//Right,	Bottom,	Back
+	{ 1.0f, 1.0f, 1.0f },	//6	//Right,	Top,	Back
+	{ 0.0f, 1.0f, 1.0f }	//7	//Left,		Top,	Back
 	//8 total
 };
 //Cube faces
