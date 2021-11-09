@@ -105,7 +105,6 @@ void Worldstate::render(Renderer& renderer)
 			chunk_obj.material.texture_id = 2;
 
 			renderer.drawObject(chunk_obj);
-			std::cout << "Added chunk at (" << chunk_pos.x << ", " << chunk_pos.y << ", " << chunk_pos.z << ")\n";
 		}
 		else
 		{

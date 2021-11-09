@@ -50,8 +50,6 @@ private:
 	//Caches whether the chunk is empty
 	bool m_empty;
 	//Whether the chunk has a mesh
-	// @TODO: Change this to an optional with the mesh
-	bool m_has_mesh;
 	chunk_mesh_t m_mesh;
 	
 	//Set when the chunk needs to be updated too (?)

@@ -11,7 +11,7 @@ World::World()
 
 	//Generate some chunks
 	constexpr auto min = 0;
-	constexpr auto max = 2;
+	constexpr auto max = 1;
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -35,7 +35,6 @@ World::World()
 				const auto generateChunk = jobSystem.createJob([this, chunk_pos](Job j)
 				{
 					auto& chunk = getChunkAt(chunk_pos);
-
 					for(auto z = 0; z < CHUNK_SIZE; z+=1)
 					{
 						for(auto y = 0; y < CHUNK_SIZE; y+=1)
@@ -46,11 +45,10 @@ World::World()
 														chunk_pos.y * CHUNK_SIZE + y, 
 														chunk_pos.z * CHUNK_SIZE + z);
 
-								chunk.setBlockAt({x, y, z}, 1);
+								chunk.setBlockAt({x, y, z}, y % 2);
 							}
 						}
 					}
-
 					chunk.checkIfEmpty();
 				});
 				jobSystem.schedule(generateChunk);
