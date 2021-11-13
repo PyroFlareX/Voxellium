@@ -951,12 +951,12 @@ namespace bs::vk
 		VertexInputDescription description;
 
 		//we will have just 1 vertex buffer binding, with a per-vertex rate
-		VkVertexInputBindingDescription mainBinding = {};
-		mainBinding.binding = 0;
-		mainBinding.stride = sizeof(bs::Vertex);
-		mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		description.bindings.push_back(mainBinding);
+		description.bindings.emplace_back(VkVertexInputBindingDescription 
+		{
+			.binding = 0,
+			.stride = sizeof(bs::Vertex),
+			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+		});
 
 		//Position will be stored at Location 0
 		VkVertexInputAttributeDescription positionAttribute = {};
@@ -1132,7 +1132,7 @@ namespace bs::vk
 		VkShaderModule shaderModule;
 		if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to create shader module!");
+			throw std::runtime_error("Failed to create shader module!");
 		}
 
 		return shaderModule;

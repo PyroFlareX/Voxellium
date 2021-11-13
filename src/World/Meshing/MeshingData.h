@@ -72,6 +72,13 @@ constexpr pos_xyz FRONT(0, 0, -1);
 constexpr pos_xyz BACK(0, 0, 1);
 constexpr pos_xyz NONE(0, 0, 0);
 
+// Meshing constants
+constexpr auto NUM_SIDES = 6;
+constexpr auto NUM_FACES_PER_SIDE = CHUNK_VOLUME;
+constexpr auto NUM_VERTS_PER_SIDE = NUM_FACES_PER_SIDE * 4;
+constexpr auto NUM_FACES_IN_FULL_CHUNK = NUM_FACES_PER_SIDE * NUM_SIDES;
+constexpr auto NUM_VERTS_IN_FULL_CHUNK = NUM_FACES_IN_FULL_CHUNK * 4;
+
 enum class dir
 {
 	FRONT = 0,
