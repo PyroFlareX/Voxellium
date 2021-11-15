@@ -14,6 +14,7 @@ namespace bs::vk
 
 		//Basic Pipeline struct filling info
 		m_gfxCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		m_gfxCreateInfo.pNext = nullptr;
 		m_gfxCreateInfo.subpass = 0;
 		m_gfxCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 		m_gfxCreateInfo.flags = 0;

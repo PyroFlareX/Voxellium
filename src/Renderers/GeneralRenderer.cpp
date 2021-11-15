@@ -38,23 +38,15 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, Vk
 	m_beginInfo = bufferBeginInfo;
 	
 	bs::vk::GraphicsPipelineBuilder graphicsPipelineBuilder(p_device, m_renderpass, desclayout);
-	
 	graphicsPipelineBuilder.addVertexShader("res/Shaders/vert.spv");
 	graphicsPipelineBuilder.addFragmentShader("res/Shaders/frag.spv");
-
 	graphicsPipelineBuilder.setDrawMode(bs::vk::DrawMode::FILL);
 	graphicsPipelineBuilder.setRasterizingData(false, true);
 	graphicsPipelineBuilder.setPushConstantSize(sizeof(PushConstantsStruct));
 	graphicsPipelineBuilder.useVertexDescription(bs::vk::getVertexDescription());
 	
 	graphicsPipelineBuilder.build();
-	std::cout << "Get results\n";
 	graphicsPipelineBuilder.getResults(m_genericPipeline, m_pipelineLayout);
-	std::cout << "Finished\n";
-
-	// Pipelines
-	//Model object pipeline
-	// bs::vk::createPipelineDefault(*p_device, m_genericPipeline, m_renderpass, m_pipelineLayout, desclayout);
 
 	jobSystem.wait();
 }
@@ -65,7 +57,6 @@ GeneralRenderer::~GeneralRenderer()
 	vkDestroyPipeline(p_device->getDevice(), m_genericPipeline, nullptr);
 	vkDestroyCommandPool(p_device->getDevice(), m_pool, nullptr);
 }
-
 
 void GeneralRenderer::addInstance(const bs::GameObject& entity)
 {
