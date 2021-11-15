@@ -1130,8 +1130,10 @@ namespace bs::vk
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) 
+		VkResult result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
+		if(result != VK_SUCCESS) 
 		{
+			std::cerr << "Failed to create shader module, error code: " << result << "\n";
 			throw std::runtime_error("Failed to create shader module!");
 		}
 

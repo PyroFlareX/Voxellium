@@ -21,7 +21,7 @@ layout (set = 0, binding = 0) uniform testbuffer
 	mat4 model;
 } testbufferdata;
 
-layout (set = 0, binding = 3) uniform sampler2D textures[];
+layout (set = 0, binding = 1) uniform sampler2D textures[];
 
 layout ( push_constant ) uniform constants
 {

@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "../../Util/Loaders.h"
 
+const static auto shaderName = "main";
 
 namespace bs::vk
 {
@@ -15,21 +16,29 @@ namespace bs::vk
 		m_gfxCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		m_gfxCreateInfo.subpass = 0;
 		m_gfxCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+		m_gfxCreateInfo.flags = 0;
 		
 		m_gfxCreateInfo.renderPass = renderpass;
 		//Basic pipeline layout struct filling info
 		m_layoutinfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		m_layoutinfo.pNext = nullptr;
+		m_layoutinfo.flags = 0;
 		m_layoutinfo.setLayoutCount = 1;
 		m_layoutinfo.pSetLayouts = &desclayout;
+		m_layoutinfo.pushConstantRangeCount = 0;
+		m_layoutinfo.pPushConstantRanges = nullptr;
 
 		//Default rasterizer stuff
 		m_rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		m_rasterizer.pNext = nullptr;
+		m_rasterizer.flags = 0;
 		m_rasterizer.depthClampEnable = VK_FALSE;
 		m_rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		m_rasterizer.depthBiasEnable = VK_FALSE;
 		m_rasterizer.lineWidth = 1.0f;
 		//Default value
 		m_rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		m_rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		//Rasterizer State
 		m_gfxCreateInfo.pRasterizationState = &m_rasterizer;
 	}
@@ -55,7 +64,9 @@ namespace bs::vk
 		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		stageInfo.module = shaderModule;
-		stageInfo.pName = "main";
+		stageInfo.pName = shaderName;
+
+		m_vert = true;
 	}
 
 	void GraphicsPipelineBuilder::addFragmentShader(const std::string& filepath)
@@ -67,7 +78,9 @@ namespace bs::vk
 		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		stageInfo.module = shaderModule;
-		stageInfo.pName = "main";
+		stageInfo.pName = shaderName;
+
+		m_frag = true;
 	}
 
 	void GraphicsPipelineBuilder::useVertexDescription(const VertexInputDescription& vdesc)
@@ -85,13 +98,28 @@ namespace bs::vk
 			std::cout << "Push Constant Size is not valid! Max is " << MAX_PUSH_CONSTANT_SIZE_BYTES << " while "
 				<< sizeofStructInBytes << " was passed!\n";
 		}
-		// assert(pushConstantSize <= MAX_PUSH_CONSTANT_SIZE_BYTES);
+		assert(pushConstantSize <= MAX_PUSH_CONSTANT_SIZE_BYTES);
 	}
 	
 	void GraphicsPipelineBuilder::setRasterizingData(const bool drawClockwise, const bool cullBack)
 	{
-		m_rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		m_rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		if(drawClockwise)
+		{
+			m_rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		}
+		else
+		{
+			m_rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		}
+
+		if(cullBack)
+		{
+			m_rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
+		}
+		else
+		{
+			m_rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		}
 	}
 	
 	void GraphicsPipelineBuilder::setDrawMode(DrawMode drawMode)
@@ -112,9 +140,10 @@ namespace bs::vk
 
 	void GraphicsPipelineBuilder::build()
 	{
-		if(!(m_vert || m_frag))
+		if(!m_vert || !m_frag)
 		{
-			throw std::runtime_error("Shaders not built!!!\n");
+			std::cerr << "Shaders not built!!!\n";
+			throw std::runtime_error("Shaders not built\n");
 		}
 
 		//Run the stuff to build the pipeline + layout
@@ -130,7 +159,6 @@ namespace bs::vk
 		pipelineLayout = m_layout;
 	}
 
-	//Helper functions
 	VkExtent2D GraphicsPipelineBuilder::getExtent() const
 	{
 		return VkExtent2D
@@ -165,7 +193,6 @@ namespace bs::vk
 	void GraphicsPipelineBuilder::buildLayout()
 	{
 		VkPushConstantRange constants{};
-		m_layoutinfo.pPushConstantRanges = &constants;
 		constants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		constants.offset = 0;
 
@@ -180,8 +207,12 @@ namespace bs::vk
 			m_layoutinfo.pushConstantRangeCount = 0;
 		}
 
-		if(vkCreatePipelineLayout(p_device->getDevice(), &m_layoutinfo, nullptr, &m_layout) != VK_SUCCESS) 
+		m_layoutinfo.pPushConstantRanges = &constants;
+
+		VkResult result = vkCreatePipelineLayout(p_device->getDevice(), &m_layoutinfo, nullptr, &m_layout);
+		if(result != VK_SUCCESS) 
 		{
+			std::cerr << "Failed to create pipeline layout, error code: " << result << "\n";
 			throw std::runtime_error("Failed to create pipeline layout!");
 		}
 
@@ -202,17 +233,18 @@ namespace bs::vk
 		};
 		VkPipelineDynamicStateCreateInfo dynState = {};
 		dynState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynState.dynamicStateCount = static_cast<int>(dynamicStateEnables.size());
+		dynState.pNext = nullptr;
+		dynState.dynamicStateCount = static_cast<u32>(dynamicStateEnables.size());
 		dynState.pDynamicStates = dynamicStateEnables.data();
 		m_gfxCreateInfo.pDynamicState = &dynState;
 
 		//Viewport / Scissor State Stuff
 		const VkViewport viewport = getViewport();
 		const VkRect2D scissor = getScissor();
-		VkPipelineViewportStateCreateInfo viewportState;
+		VkPipelineViewportStateCreateInfo viewportState{};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.flags = 0;
 		viewportState.pNext = nullptr;
+		viewportState.flags = 0;
 		viewportState.viewportCount = 1;
 		viewportState.pViewports = &viewport;
 		viewportState.scissorCount = 1;
@@ -226,6 +258,7 @@ namespace bs::vk
 
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.pNext = nullptr;
 		colorBlending.logicOpEnable = VK_FALSE;
 		colorBlending.logicOp = VK_LOGIC_OP_COPY;
 		colorBlending.attachmentCount = 1;
@@ -253,8 +286,9 @@ namespace bs::vk
 		m_gfxCreateInfo.pInputAssemblyState = &inputAssembly;
 
 		//Vertex Description
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInputInfo.pNext = nullptr;
 		vertexInputInfo.vertexBindingDescriptionCount = (u32)m_vertex_description.bindings.size();
 		vertexInputInfo.vertexAttributeDescriptionCount = (u32)m_vertex_description.attributes.size();
 		vertexInputInfo.pVertexBindingDescriptions = m_vertex_description.bindings.data();
@@ -262,8 +296,10 @@ namespace bs::vk
 		m_gfxCreateInfo.pVertexInputState = &vertexInputInfo;
 
 		//Creation of the pipeline
-		if(vkCreateGraphicsPipelines(p_device->getDevice(), VK_NULL_HANDLE, 1, &m_gfxCreateInfo, nullptr, &m_pipeline) != VK_SUCCESS)
+		VkResult result = vkCreateGraphicsPipelines(p_device->getDevice(), VK_NULL_HANDLE, 1, &m_gfxCreateInfo, nullptr, &m_pipeline);
+		if(result != VK_SUCCESS)
 		{
+			std::cerr << "Failed to create graphics pipeline, the result is: " << result << "\n";
 			throw std::runtime_error("Failed to create graphics pipeline!");
 		}
 	}

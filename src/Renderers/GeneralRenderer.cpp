@@ -1,13 +1,15 @@
 #include "GeneralRenderer.h"
 
 
+#include <GPU/Vulkan/PipelineBuilder.h>
+
 GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	: 
 	p_device(mainDevice), m_renderpass(rpass)
 {
 	bs::vk::createCommandPool(*p_device, m_pool);
 
 	//Renderlists for secondary cmd buffers
-	m_renderlist.resize(10);
+	m_renderlist.resize(2);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -20,13 +22,6 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, Vk
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 
-	VkCommandBufferBeginInfo bufferBeginInfo = {};
-	bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	bufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	bufferBeginInfo.pInheritanceInfo = &m_inheritanceInfo;
-
-	m_beginInfo = bufferBeginInfo;
-
 	VkCommandBufferInheritanceInfo bufferInheritanceInfo = {};
 	bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 	bufferInheritanceInfo.renderPass = m_renderpass;
@@ -34,11 +29,32 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, Vk
 	bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
 
 	m_inheritanceInfo = bufferInheritanceInfo;
+
+	VkCommandBufferBeginInfo bufferBeginInfo = {};
+	bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	bufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+	bufferBeginInfo.pInheritanceInfo = &m_inheritanceInfo;
+
+	m_beginInfo = bufferBeginInfo;
 	
+	bs::vk::GraphicsPipelineBuilder graphicsPipelineBuilder(p_device, m_renderpass, desclayout);
+	
+	graphicsPipelineBuilder.addVertexShader("res/Shaders/vert.spv");
+	graphicsPipelineBuilder.addFragmentShader("res/Shaders/frag.spv");
+
+	graphicsPipelineBuilder.setDrawMode(bs::vk::DrawMode::FILL);
+	graphicsPipelineBuilder.setRasterizingData(false, true);
+	graphicsPipelineBuilder.setPushConstantSize(sizeof(PushConstantsStruct));
+	graphicsPipelineBuilder.useVertexDescription(bs::vk::getVertexDescription());
+	
+	graphicsPipelineBuilder.build();
+	std::cout << "Get results\n";
+	graphicsPipelineBuilder.getResults(m_genericPipeline, m_pipelineLayout);
+	std::cout << "Finished\n";
 
 	// Pipelines
 	//Model object pipeline
-	bs::vk::createPipelineDefault(*p_device, m_genericPipeline, m_renderpass, m_pipelineLayout, desclayout);
+	// bs::vk::createPipelineDefault(*p_device, m_genericPipeline, m_renderpass, m_pipelineLayout, desclayout);
 
 	jobSystem.wait();
 }
