@@ -13,7 +13,7 @@ namespace bs::vk
 		TASK,
 		TESSALATION,
 		GEOMETRY,
-		NUM_SHADERTYPES
+		NUM_SHADER_TYPES
 	};
 
 	enum class DrawMode

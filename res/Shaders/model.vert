@@ -15,12 +15,12 @@ layout(location = 2) in vec2 aTexCoord;
 
 layout (location = 0) out outVert outVertShader;
 
-layout (set = 0, binding = 0) uniform testbuffer
+layout (set = 0, binding = 0) uniform MVP
 {
 	mat4 proj;
 	mat4 view;
 	mat4 model;
-} testbufferdata;
+} CameraData;
 
 layout ( push_constant ) uniform constants
 {
@@ -36,11 +36,11 @@ vec3 colors[3] = vec3[]
 
 void main()
 {
-	outVertShader.fragPos = vec3(testbufferdata.model * vec4(aPos, 1.0));
+	outVertShader.fragPos = vec3(CameraData.model * vec4(aPos, 1.0));
 	outVertShader.textureCoordinates = aTexCoord;
-	outVertShader.normal = vec3(testbufferdata.model * vec4(aNormal, 0.0));
+	outVertShader.normal = vec3(CameraData.model * vec4(aNormal, 0.0));
 	
-	gl_Position = testbufferdata.proj * testbufferdata.view * testbufferdata.model * vec4(aPos, 1.0);
+	gl_Position = CameraData.proj * CameraData.view * CameraData.model * vec4(aPos, 1.0);
 
 	//TBN Matrix Starting BS
 	

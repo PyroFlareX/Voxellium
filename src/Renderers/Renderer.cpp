@@ -349,8 +349,6 @@ void Renderer::initRenderpass()
 
 void Renderer::initDescriptorPool()
 {
-	VkResult result;
-
 	//Descriptor pool stuff
 	VkDescriptorPoolCreateInfo descpoolinfo{};
 
@@ -369,17 +367,16 @@ void Renderer::initDescriptorPool()
 	descpoolinfo.poolSizeCount = numDescriptors;
 	descpoolinfo.maxSets = 4;
 
-	result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
+	VkResult result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
 	if(result != VK_SUCCESS)
 	{
-		std::cout << "Creating Descriptor Pool Failed, result = " << result << "\n";
+		std::cerr << "Creating Descriptor Pool Failed, result = " << result << "\n";
+		throw std::runtime_error("Creating Descriptor Pool Failed!!!");
 	}
 }
 
 void Renderer::initDescriptorSets()
 {
-	VkResult result;
-
 	// Descriptor Sets
 	VkDescriptorSetLayoutBinding setlayoutbinding[numDescriptors] = {};
 	setlayoutbinding[0].binding = 0;
@@ -403,15 +400,16 @@ void Renderer::initDescriptorSets()
 	VkDescriptorSetLayoutCreateInfo desclayoutinfo{};
 	desclayoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	desclayoutinfo.pNext = &layoutbindingflags;
+	desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 	desclayoutinfo.bindingCount = numDescriptors;
 	desclayoutinfo.pBindings = &setlayoutbinding[0];
-	desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 		
 	//Creating the layouts for the descriptor sets
+	VkResult result;
 	result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
 	if(result != VK_SUCCESS)
 	{
-		std::cout << "Creating Descriptor Set Layout Failed, result = " << result << "\n";
+		std::cerr << "Creating Descriptor Set Layout Failed, result = " << result << "\n";
 	}
 
 	//Descriptor Allocation Info
@@ -433,7 +431,7 @@ void Renderer::initDescriptorSets()
 	result = vkAllocateDescriptorSets(device->getDevice(), &descriptorAllocInfo, &m_descsetglobal);
 	if(result != VK_SUCCESS)
 	{
-		std::cout << "Allocate Descriptor Sets Failed, result = " << result << "\n";
+		std::cerr << "Allocate Descriptor Sets Failed, result = " << result << "\n";
 	}
 
 	bs::asset_manager->pDescsetglobal = &m_descsetglobal;
@@ -450,15 +448,23 @@ void Renderer::initCommandPoolAndBuffers()
 	allocInfo.commandPool = m_pool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = m_primaryBuffers.size();
-
-	if (vkAllocateCommandBuffers(device->getDevice(), &allocInfo, m_primaryBuffers.data()) != VK_SUCCESS) 
+	
+	VkResult result = vkAllocateCommandBuffers(device->getDevice(), &allocInfo, m_primaryBuffers.data());
+	if(result != VK_SUCCESS) 
 	{
+		std::cerr << "Failed to allocate command buffers, error code: " << result << "\n";
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 }
 
 void Renderer::initDescriptorSetBuffers()
 {
+	typedef struct
+	{
+		bs::mat4 proj;
+		bs::mat4 view;
+	} ProjView;
+	
 	struct MVP
 	{
 		bs::mat4 proj;
