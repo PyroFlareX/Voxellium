@@ -33,13 +33,15 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 	// UI scale and translate via push constants
 	auto& io = ImGui::GetIO();
 
-	VkViewport vport;
-	vport.x = 0.0f;
-	vport.y = 0.0f;
-	vport.width = io.DisplaySize.x;
-	vport.height = io.DisplaySize.y;
-	vport.minDepth = 0.0f;
-	vport.maxDepth = 1.0f;
+	const VkViewport vport
+	{
+		.x = 0.0f,
+		.y = 0.0f,
+		.width = io.DisplaySize.x,
+		.height = io.DisplaySize.y,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
 
 	vkCmdSetViewport(cmd, 0, 1, &vport);
 
@@ -48,31 +50,38 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 	pushconstantblock.translate = bs::vec2(-1.0f);
 	pushconstantblock.textureID = bs::vec4(0.0f);
 
-	auto* drawData = ImGui::GetDrawData();
+	const auto* drawData = ImGui::GetDrawData();
 	int vertexOffset = 0;
 	int indexOffset = 0;
 
 	if(drawData->CmdListsCount > 0)
 	{
-		
 		VkDeviceSize offset = 0;
 		vkCmdBindVertexBuffers(cmd, 0, 1, &bs::asset_manager->getBuffer("GUIvert")->getAPIResource(), &offset);
 		vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer("GUIindex")->getAPIResource(), offset, VK_INDEX_TYPE_UINT16);
 
-		for (int32_t i = 0; i < drawData->CmdListsCount; ++i)
+		for (int i = 0; i < drawData->CmdListsCount; ++i)
 		{
 			const ImDrawList* cmd_list = drawData->CmdLists[i];
 			
-			for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; ++j)
+			for (int j = 0; j < cmd_list->CmdBuffer.Size; ++j)
 			{
 				const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
 
-				VkRect2D scissorRect;
+				const VkRect2D scissorRect
+				{
+					.offset = 
+					{
+						.x = std::max((int)(pcmd->ClipRect.x), 0), 
+						.y = std::max((int)(pcmd->ClipRect.y), 0)
+					},
+					.extent = 
+					{
+						.width = (u32)(pcmd->ClipRect.z - pcmd->ClipRect.x),
+						.height = (u32)(pcmd->ClipRect.w - pcmd->ClipRect.y)
+					}
+				};
 
-				scissorRect.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
-				scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
-				scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-				scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
 				vkCmdSetScissor(cmd, 0, 1, &scissorRect);
 				
 				if(pcmd->TextureId != nullptr)
@@ -103,41 +112,32 @@ void UIRenderer::bakeImGui()
 	//Draw IMGUI stuff | temp, move to UIRenderer eventually | or maybe keep here, there's no reason to move it? idk
 	auto* drawData = ImGui::GetDrawData();
 
-	//Folding scope for recreating the buffers for ImGUI
+	auto vertexBuffer = bs::asset_manager->getBuffer("GUIvert");
+	auto indexBuffer = bs::asset_manager->getBuffer("GUIindex");
+	int vertSize = drawData->TotalVtxCount;
+	int indexSize = drawData->TotalIdxCount;
+
+	//Checks if the buffers need to be recreated |	if the num of verticies or indices is more than 
+	//												the amount in the buffer, then reallocated buffers
+	if((vertSize > vertexBuffer->getNumElements()) || (indexSize > indexBuffer->getNumElements()))
 	{
-		bs::vk::Buffer* vertexBuffer = bs::asset_manager->getBuffer("GUIvert");
-		bs::vk::Buffer* indexBuffer = bs::asset_manager->getBuffer("GUIindex");
+		vertexBuffer->setMaxElements(vertSize);
+		indexBuffer->setMaxElements(indexSize);
 
-		int vertSize = drawData->TotalVtxCount;
-		int indexSize = drawData->TotalIdxCount;
+		vertexBuffer->uploadBuffer();
+		indexBuffer->uploadBuffer();
+	}
+	
+	int offsetvert = 0;
+	int offsetindex = 0;
+	for(int n = 0; n < drawData->CmdListsCount; ++n)
+	{
+		ImDrawList* cmdlist = drawData->CmdLists[n];
+		vertexBuffer->writeBuffer(cmdlist->VtxBuffer.Data, cmdlist->VtxBuffer.size_in_bytes(), offsetvert);
+		indexBuffer->writeBuffer(cmdlist->IdxBuffer.Data, cmdlist->IdxBuffer.size_in_bytes(), offsetindex);
 
-		//Checks if the buffers need to be recreated |	if the num of verticies or indices is more than 
-		//												the amount in the buffer, then reallocated buffers
-		if((vertSize > vertexBuffer->getNumElements()) || (indexSize > indexBuffer->getNumElements()))
-		{
-			vertexBuffer->deleteBuffer();
-			indexBuffer->deleteBuffer();
-
-			vertexBuffer->setMaxElements(vertSize);
-			indexBuffer->setMaxElements(indexSize);
-
-			vertexBuffer->uploadBuffer(false);
-			indexBuffer->uploadBuffer(false);
-		}
-		
-		{
-			int offsetvert = 0;
-			int offsetindex = 0;
-			for(int n = 0; n < drawData->CmdListsCount; ++n)
-			{
-				ImDrawList* cmdlist = drawData->CmdLists[n];
-				vertexBuffer->writeBuffer(cmdlist->VtxBuffer.Data, cmdlist->VtxBuffer.size_in_bytes(), offsetvert);
-				indexBuffer->writeBuffer(cmdlist->IdxBuffer.Data, cmdlist->IdxBuffer.size_in_bytes(), offsetindex);
-
-				offsetvert += cmdlist->VtxBuffer.size_in_bytes();
-				offsetindex += cmdlist->IdxBuffer.size_in_bytes();
-			}
-		}
+		offsetvert += cmdlist->VtxBuffer.size_in_bytes();
+		offsetindex += cmdlist->IdxBuffer.size_in_bytes();
 	}
 }
 

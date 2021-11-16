@@ -1,10 +1,18 @@
 #include "Buffer.h"
 
+#include <stdexcept>
+#include <memory>
+
 namespace bs::vk
 {
-	Buffer::Buffer(BufferDescription bufdesc) : m_desc(bufdesc)
+	Buffer::Buffer(const BufferDescription bufdesc) : m_desc(bufdesc)
 	{
-		
+		if(m_desc.stride == 0)
+		{
+			m_desc.stride = 1;
+		}
+
+		uploadBuffer();
 	}
 
 	Buffer::~Buffer()
@@ -12,22 +20,32 @@ namespace bs::vk
 		deleteBuffer();
 	}
 
-	size_t Buffer::getStride()
+	u64 Buffer::getStride() const
 	{
 		return m_desc.stride;
 	}
 
-	size_t Buffer::getSize()
+	u64 Buffer::getSize() const
 	{
 		return m_desc.size;
 	}
 
-	size_t Buffer::getNumElements()
+	u64 Buffer::getNumElements() const
 	{
 		return m_desc.size / m_desc.stride;
 	}
 
-	void Buffer::uploadBuffer(bool write)
+	void Buffer::setMaxElements(u64 numElements)
+	{
+		m_desc.size = m_desc.stride * numElements;
+	}
+
+	void Buffer::setAllocationSize(const u64 numBytes)
+	{
+		m_desc.size = numBytes;
+	}
+	
+	void Buffer::uploadBuffer()
 	{
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
@@ -35,8 +53,8 @@ namespace bs::vk
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = getSize();
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		// To get the buffer type
 		if (m_desc.bufferType == bs::vk::BufferUsage::VERTEX_BUFFER)
 		{
@@ -63,33 +81,36 @@ namespace bs::vk
 			bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
 		}
-		
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		else
+		{
+			bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+			std::cout << "There is a buffer allocation description issue!\n";
+		}
 		
 		vmaCreateBuffer(m_desc.dev->getAllocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr);
 
-		if(write)
+		if(m_desc.bufferData != nullptr)
 		{
 			writeBuffer(m_desc.bufferData);
+			m_desc.bufferData = nullptr;
 		}
 	}
 
-	void Buffer::writeBuffer(void* data, size_t size, size_t offset)
+	void Buffer::writeBuffer(const void* data, u64 size, u64 offset)
 	{
-		void* bufferdata;
-		
 		if(size == 0)
 		{
 			size = getSize();
 		}
 
 		//Maps GPU memory to CPU visible address
+		void* bufferdata = nullptr;
 		vmaMapMemory(m_desc.dev->getAllocator(), m_allocation, &bufferdata);
-
-		bufferdata = reinterpret_cast<char*>(bufferdata) + offset;
-		
+		//Add the offset
+		bufferdata = (u8*)bufferdata + offset;
 		memcpy(bufferdata, data, size);
 
+		//Unmaps the buffer
 		vmaUnmapMemory(m_desc.dev->getAllocator(), m_allocation);
 	}
 
@@ -107,10 +128,5 @@ namespace bs::vk
 	void Buffer::deleteBuffer()
 	{
 		vmaDestroyBuffer(m_desc.dev->getAllocator(), m_buffer, m_allocation);
-	}
-
-	void Buffer::setMaxElements(size_t numElements)
-	{
-		m_desc.size = m_desc.stride * numElements;
 	}
 }

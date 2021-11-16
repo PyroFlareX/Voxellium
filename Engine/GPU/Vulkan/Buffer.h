@@ -4,9 +4,6 @@
 
 #include "Device.h"
 
-#include <stdexcept>
-#include <memory>
-
 namespace bs::vk 
 {
 	//Type of buffer
@@ -30,9 +27,9 @@ namespace bs::vk
 		//Buffer Type
 		BufferUsage bufferType;
 		//Number of bytes
-		size_t size = 0;
+		u64 size = 0;
 		//Number of bytes between elements
-		size_t stride = 0;
+		u64 stride = 0;
 		//Pointer to data
 		void* bufferData = nullptr;
 	};
@@ -41,34 +38,36 @@ namespace bs::vk
 	class Buffer
 	{
 	public:
-		Buffer(BufferDescription bufdesc);
+		Buffer(const BufferDescription bufdesc);
+		~Buffer();
 
-		size_t getStride();	//For size of subtype
-		size_t getSize(); //In bytes
-		size_t getNumElements();	//Number of indices
+		//For size of subtype
+		u64 getStride() const;
+		//In bytes
+		u64 getSize() const;
+		//Get number of items in the buffer based on size and stride
+		u64 getNumElements() const;
 
-		//Upload Buffer to allocated space in vulkan memory
-		void uploadBuffer(bool write = true);
+		//Change description values | Does not reallocate buffer
+		void setMaxElements(const u64 numElements);
+		//Change description values | Does not reallocate buffer
+		void setAllocationSize(const u64 numBytes);
+
+		//Upload Buffer to allocated space in vulkan memory, reallocates if needed
+		void uploadBuffer();
 		// Uses buf desc size, copies the data in ``data`` to the buffer
-		void writeBuffer(void* data, size_t size = 0, size_t offset = 0);
+		void writeBuffer(const void* data, u64 size = 0, u64 offset = 0);
 
-		//Obvious
+		//Obvious, deletes previous buffer if it is allocated
 		void setAPIResource(VkBuffer& buffer);
-		//Get buffer
+		//Get buffer handle
 		VkBuffer& getAPIResource();
 
 		//Deallocate buffer
 		void deleteBuffer();
-
-		//Change description values | Does not reallocate buffer
-		void setMaxElements(size_t numElements);
-
-		~Buffer();
 	private:
 		VkBuffer m_buffer;
-
 		BufferDescription m_desc;
-
 		VmaAllocation m_allocation;
 	};
 }

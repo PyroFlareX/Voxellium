@@ -66,7 +66,6 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	bufdesc.stride = 4;
 	bufdesc.bufferData = dataPtr;
 	bs::vk::Buffer stagingbuffer(bufdesc);
-	stagingbuffer.uploadBuffer();
 
 	vmaCreateImage(p_device->getAllocator(), &image, &imgAllocInfo, &textureImg, &textureAllocation, nullptr);
 	

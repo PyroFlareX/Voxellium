@@ -100,13 +100,11 @@ void Renderer::initGUI()
 		ibufdesc.stride = sizeof(ImDrawIdx);
 		ibufdesc.size = 120;
 
-		auto* buffer = new bs::vk::Buffer(vbufdesc);
-		buffer->uploadBuffer();
-		bs::asset_manager->addBuffer(buffer, "GUIvert");
+		////Create the ImGui Vertex Buffer
+		bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(vbufdesc), "GUIvert");
 
-		buffer = new bs::vk::Buffer(ibufdesc);
-		buffer->uploadBuffer();
-		bs::asset_manager->addBuffer(buffer, "GUIindex");
+		//Create the ImGui Index Buffer
+		bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(ibufdesc), "GUIindex");
 	}
 
 	//IMGUI FONT STUFF
@@ -241,7 +239,7 @@ void Renderer::pushGPUData(Camera& cam)
 {
 	//Buffer Writing Info
 	VkDescriptorBufferInfo bufferInfo1 = {};
-	auto* buf = bs::asset_manager->getBuffer("MVP");
+	auto buf = bs::asset_manager->getBuffer("MVP");
 	bufferInfo1.buffer = buf->getAPIResource();
 	bufferInfo1.offset = 0;
 	bufferInfo1.range = 192;
@@ -482,6 +480,5 @@ void Renderer::initDescriptorSetBuffers()
 	uniform.stride = sizeof(bs::mat4);
 	uniform.bufferData = &uniformbufferthing;
 
-	bs::asset_manager->addBuffer(new bs::vk::Buffer(uniform), "MVP");
-	bs::asset_manager->getBuffer("MVP")->uploadBuffer();
+	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(uniform), "MVP");
 }
