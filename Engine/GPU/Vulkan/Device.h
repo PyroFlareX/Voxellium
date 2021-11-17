@@ -15,10 +15,13 @@ namespace bs
 
 		//Init device
 		void init();
+		//destroy
+		void destroy();
 
 		QueueFamilyIndices getQueueFamilies();
 		SwapChainSupportDetails getSwapchainDetails();
 		VkDevice& getDevice();
+		VkDevice getDevice() const;
 		VkPhysicalDevice& getPhysicalDevice() { return physDevice; }
 
 		//Submit GFX work
@@ -41,6 +44,8 @@ namespace bs
 		VmaAllocator m_allocatorVMA;
 
 		VkCommandPool m_pool;
+
+		bool destroyed;
 	};
 
 }

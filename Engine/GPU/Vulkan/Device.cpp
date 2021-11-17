@@ -6,13 +6,12 @@ namespace bs
 {
 	Device::Device()
 	{
-		
+		destroyed = false;	
 	}
 
 	Device::~Device() 
 	{
-		vkDestroyCommandPool(device, m_pool, nullptr);
-		vkDestroyDevice(device, nullptr);
+		destroy();
 	}
 
 	void Device::init()
@@ -31,6 +30,18 @@ namespace bs
 		bs::vk::createCommandPool(*this, m_pool);
 	}
 
+	void Device::destroy()
+	{
+		if(destroyed)
+		{
+			return;
+		}
+
+		vkDestroyCommandPool(device, m_pool, nullptr);
+		vkDestroyDevice(device, nullptr);
+		destroyed = true;
+	}
+
 	QueueFamilyIndices Device::getQueueFamilies()
 	{
 		return bs::vk::findQueueFamilies(physDevice);
@@ -42,6 +53,11 @@ namespace bs
 	}
 
 	VkDevice& Device::getDevice()
+	{
+		return device;
+	}
+
+	VkDevice Device::getDevice() const
 	{
 		return device;
 	}

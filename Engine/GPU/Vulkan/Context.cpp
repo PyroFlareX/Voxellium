@@ -20,13 +20,14 @@ namespace bs
 	void Context::setIcon(Image& icon)
 	{
 		//Make the Window Icon Something
-		GLFWimage img;
-		img.width = icon.getSize().x;
-		img.height = icon.getSize().y;
-		img.pixels = (unsigned char*)icon.getPixelsPtr();
+		const GLFWimage img
+		{
+			.width = icon.getSize().x,
+			.height = icon.getSize().y,
+			.pixels = (unsigned char*)icon.getPixelsPtr()
+		};
 
 		glfwSetWindowIcon(getContext(), 1, &img);	
-		//End of creating the icon
 	}
 
 	void Context::clear()
@@ -39,35 +40,32 @@ namespace bs
 		{
 			recreateSwapchain();
 			refresh = true;
-			return;
 		} 
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		{
-			throw std::runtime_error("failed to acquire swap chain image!");
+			throw std::runtime_error("Failed to acquire swap chain image!");
 		}
-
 	}
 
 	void Context::update()
 	{
-		VkResult result;
-
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.pNext = nullptr;
+		presentInfo.pResults = nullptr;
 
 		// Waits to present until the "render finished" semaphore (signal) is "signaled" (when the render is done, the semaphore is triggered by)
-		VkSemaphore signalSemaphores[] = { bs::vk::renderFinishedSemaphores[currentFrame] };
+		VkSemaphore signalSemaphore = bs::vk::renderFinishedSemaphores[currentFrame];
+		presentInfo.pWaitSemaphores = &signalSemaphore;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = { m_swapchain };
+		//Pass swapchain
+		presentInfo.pSwapchains = &m_swapchain;
 		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
 
 		presentInfo.pImageIndices = &imageIndex;
 
 		// Submit Image that just finished rendering to the presentation surface
-		result = vkQueuePresentKHR(m_Device->getPresentQueue(), &presentInfo);
+		VkResult result = vkQueuePresentKHR(m_Device->getPresentQueue(), &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
 		{
@@ -166,23 +164,21 @@ namespace bs
 	{
 		vmaDestroyAllocator(m_Device->getAllocator());
 
+		//Destroy Sync Primitives
 		for (auto& fence : bs::vk::inFlightFences)
 		{
 			vkDestroyFence(m_Device->getDevice(), fence, nullptr);
 		}
-
 		for (auto& semaphore : bs::vk::renderFinishedSemaphores) 
 		{
 			vkDestroySemaphore(m_Device->getDevice(), semaphore, nullptr);
 		}
-
 		for (auto& semaphore : bs::vk::imageAvailableSemaphores) 
 		{
 			vkDestroySemaphore(m_Device->getDevice(), semaphore, nullptr);
 		}
 
-
-
+		//Destroy swapchain framebuffers & image views
 		for (int i = 0; i < m_scdetails.swapChainFramebuffers.size(); ++i) 
 		{
 			vkDestroyFramebuffer(m_Device->getDevice(), m_scdetails.swapChainFramebuffers[i], nullptr);
@@ -197,7 +193,7 @@ namespace bs
 		vkDestroySwapchainKHR(m_Device->getDevice(), m_swapchain, nullptr);
 		vkDestroySurfaceKHR(bs::vk::m_instance, bs::vk::m_surface, nullptr);
 
-		m_Device->~Device();
+		m_Device->destroy();
 
 		vkDestroyInstance(bs::vk::m_instance, nullptr);
 		glfwDestroyWindow(m_window);
