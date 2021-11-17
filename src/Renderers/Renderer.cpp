@@ -60,9 +60,9 @@ Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
 	initDescriptorSetBuffers();
 
 	//Create General Renderer
-	m_generalRenderer = std::make_unique<GeneralRenderer>(device, renderpassdefault, desclayout);
+	m_generalRenderer = std::make_unique<GeneralRenderer>(device, m_renderpassdefault, desclayout);
 	//Create UI Renderer Pipeline And the Renderer
-	bs::vk::createUIPipeline(*device, imguipipeline, renderpassdefault, guilayout, desclayout);
+	bs::vk::createUIPipeline(*device, imguipipeline, m_renderpassdefault, guilayout, desclayout);
 	m_UIRenderer = std::make_unique<UIRenderer>(device, imguipipeline, guilayout);
 }
 
@@ -72,7 +72,7 @@ Renderer::~Renderer()
 	vkDestroyPipeline(device->getDevice(), imguipipeline, nullptr);
 	vkDestroyPipelineLayout(device->getDevice(), guilayout, nullptr);
 	// Destroy the rest of the Vulkan allocations
-	vkDestroyRenderPass(device->getDevice(), renderpassdefault, nullptr);
+	vkDestroyRenderPass(device->getDevice(), m_renderpassdefault, nullptr);
 	vkDestroyCommandPool(device->getDevice(), m_pool, nullptr);
 	vkDestroyDescriptorSetLayout(device->getDevice(), desclayout, nullptr);
 	vkDestroyDescriptorPool(device->getDevice(), m_descpool, nullptr);
@@ -166,7 +166,7 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 	//Renderpass info stuff
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = renderpassdefault;
+	renderPassInfo.renderPass = m_renderpassdefault;
 	renderPassInfo.framebuffer = fbo.handle[index];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	//Extent defining for renderpass
@@ -276,8 +276,6 @@ void Renderer::pushGPUData(Camera& cam)
 		imginfo.sampler = textures[i].sampler;
 		imageinfo.emplace_back(imginfo);
 	}
-
-	
 	
 	//Writing Info
 	VkWriteDescriptorSet descWrite[numDescriptors] = {};
@@ -300,10 +298,16 @@ void Renderer::pushGPUData(Camera& cam)
 	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
 }
 
+VkRenderPass Renderer::getDefaultRenderPass() const
+{
+	return m_renderpassdefault;
+}
+
 void Renderer::initRenderpass()
 {
 	//Attachment to draw colors
 	VkAttachmentDescription colorAttachment{};
+	colorAttachment.flags = 0;
 	colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -317,13 +321,13 @@ void Renderer::initRenderpass()
 	const auto depthFormat = VK_FORMAT_D32_SFLOAT;
 	VkAttachmentDescription depthAttachment{};
 	depthAttachment.flags = 0;
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.format = depthFormat;
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	//Array to hold the 2
 	VkAttachmentDescription attachmentDescriptions[2] = {colorAttachment, depthAttachment};
@@ -354,17 +358,16 @@ void Renderer::initRenderpass()
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = 2;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.pAttachments = attachmentDescriptions;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(device->getDevice(), &renderPassInfo, nullptr, &renderpassdefault) != VK_SUCCESS) 
+	if (vkCreateRenderPass(device->getDevice(), &renderPassInfo, nullptr, &m_renderpassdefault) != VK_SUCCESS) 
 	{
 		throw std::runtime_error("failed to create render pass!");
 	}
-
 }
 
 void Renderer::initDescriptorPool()

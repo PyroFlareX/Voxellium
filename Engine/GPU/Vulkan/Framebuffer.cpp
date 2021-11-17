@@ -23,6 +23,16 @@ namespace bs::vk
 		return FramebufferData{{m_handle}, m_imgView, m_size};
 	}
 
+	VkImageView RenderTargetFramebuffer::getColorImgView() const
+	{
+		return m_imgView;
+	}
+
+	VkImageView RenderTargetFramebuffer::getDepthImgView() const
+	{
+		return m_depthImgView;
+	}
+
 	void RenderTargetFramebuffer::recreateFramebuffer(bs::vec2i size)
 	{
 		m_size = size;

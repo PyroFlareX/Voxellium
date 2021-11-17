@@ -110,13 +110,12 @@ namespace bs::vk
 	void createPipelineDefault(bs::Device& device, VkPipeline& pipeline, VkRenderPass& rpass, VkPipelineLayout& playout, VkDescriptorSetLayout& dlayout);
 	void createPipeline(bs::Device& device, VkPipeline& pipeline, VkRenderPass& rpass, VkPipelineLayout& playout, VkDescriptorSetLayout& dlayout, const std::string& vertpath, const std::string& fragpath);
 
-	void createFramebuffers(VkRenderPass& renderPass, SwapChainDetails& swapdetails, VkDevice device);
+	void createFramebuffers(VkRenderPass renderPass, SwapChainDetails& swapdetails, VkDevice device);
+	void createFramebuffersWithDepth(VkRenderPass renderPass, SwapChainDetails& swapdetails, VkDevice device, VkImageView depthImgView);
 	void createCommandPool(bs::Device& device, VkCommandPool& commandPool);
 
 	VertexInputDescription getVertexDescription();
 	VertexInputDescription getVertexDescriptionImGUI();
-
-
 
 	//Dont use
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);

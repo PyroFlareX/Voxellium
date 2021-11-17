@@ -15,7 +15,7 @@ namespace bs::vk
 
 	VkInstance m_instance;
 	VkSurfaceKHR m_surface;
-	bool validationlayers = false;
+	bool validationlayers = true;
 	VkDebugUtilsMessengerEXT debugMessenger;
 
 	// SYNCHING GLOBALS
@@ -906,13 +906,12 @@ namespace bs::vk
 		vkDestroyShaderModule(device.getDevice(), vertShaderModule, nullptr);
 	}
 
-	void createFramebuffers(VkRenderPass& renderPass, SwapChainDetails& swapdetails, VkDevice device)
+	void createFramebuffers(VkRenderPass renderPass, SwapChainDetails& swapdetails, VkDevice device)
 	{
 		swapdetails.swapChainFramebuffers.resize(swapdetails.swapChainImageViews.size());
-
-		for (size_t i = 0; i < swapdetails.swapChainImageViews.size(); i++) 
+		for (auto i = 0; i < swapdetails.swapChainImageViews.size(); i++) 
 		{
-			VkImageView attachments[] = 
+			const VkImageView attachments[] = 
 			{
 				swapdetails.swapChainImageViews[i]
 			};
@@ -932,6 +931,35 @@ namespace bs::vk
 			}
 		}
 	}
+
+	void createFramebuffersWithDepth(VkRenderPass renderPass, SwapChainDetails& swapdetails, VkDevice device, VkImageView depthImgView)
+	{
+		swapdetails.swapChainFramebuffers.resize(swapdetails.swapChainImageViews.size());
+		for (auto i = 0; i < swapdetails.swapChainImageViews.size(); i++) 
+		{
+			const VkImageView attachments[] = 
+			{
+				swapdetails.swapChainImageViews[i],
+				depthImgView
+			};
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = renderPass;
+			framebufferInfo.width = swapdetails.swapChainExtent.width;
+			framebufferInfo.height = swapdetails.swapChainExtent.height;
+			framebufferInfo.layers = 1;
+			
+			framebufferInfo.attachmentCount = 2;
+			framebufferInfo.pAttachments = attachments;
+
+			if(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapdetails.swapChainFramebuffers[i]) != VK_SUCCESS)
+			{
+				throw std::runtime_error("failed to create framebuffer!");
+			}
+		}
+	}
+
 	void createCommandPool(bs::Device& device, VkCommandPool& commandPool)
 	{
 		QueueFamilyIndices queueFamilyIndices = device.getQueueFamilies();

@@ -31,6 +31,8 @@ public:
 	//Push the uniform buffer and image descriptor to the gpu
 	void pushGPUData(Camera& cam);
 
+	VkRenderPass getDefaultRenderPass() const;
+
 private:
 	void initGUI();
 
@@ -44,7 +46,7 @@ private:
 	VkPipeline imguipipeline;
 	VkPipelineLayout guilayout;
 
-	VkRenderPass renderpassdefault;
+	VkRenderPass m_renderpassdefault;
 	std::vector<VkCommandBuffer> m_primaryBuffers;
 	VkCommandPool m_pool;
 

@@ -22,6 +22,9 @@ namespace bs::vk
 		//Recreate the framebuffer with the size specified
 		void recreateFramebuffer(bs::vec2i size);
 
+		VkImageView getColorImgView() const;
+		VkImageView getDepthImgView() const;
+
 	private:
 		void createRenderImage();
 		void createDepthAttachment();

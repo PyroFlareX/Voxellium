@@ -28,7 +28,7 @@ namespace bs
 
 		bool resized = false;	//For Callback / internal use
 		bool refresh = false;	//To let other stuff know to refresh its references to the render framebuffer
-		VkRenderPass rpass;
+		VkRenderPass* rpass;
 	private:
 		void recreateSwapchain();
 

@@ -74,7 +74,7 @@ namespace bs
 		} 
 		else if (result != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to present swap chain image!");
+			throw std::runtime_error("Failed to present swap chain image!");
 		}
 
 		// Increase Frame Index
@@ -107,15 +107,14 @@ namespace bs
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS; i++) {
+		for (size_t i = 0; i < bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS; i++) 
+		{
 			if (vkCreateSemaphore(m_Device->getDevice(), &semaphoreInfo, nullptr, &bs::vk::imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_Device->getDevice(), &semaphoreInfo, nullptr, &bs::vk::renderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_Device->getDevice(), &fenceInfo, nullptr, &bs::vk::inFlightFences[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create synchronization objects for a frame!");
+				throw std::runtime_error("Failed to create synchronization objects for a frame!");
 			}
 		}
-
-		bs::vk::createRenderPass(m_Device->getDevice(), m_scdetails, rpass);
 
 		//Start IMGUI init
 		IMGUI_CHECKVERSION();
@@ -188,8 +187,7 @@ namespace bs
 		{
 			vkDestroyImageView(m_Device->getDevice(), m_scdetails.swapChainImageViews[i], nullptr);
 		}
-		
-
+		//Destroy swapchain and render surface
 		vkDestroySwapchainKHR(m_Device->getDevice(), m_swapchain, nullptr);
 		vkDestroySurfaceKHR(bs::vk::m_instance, bs::vk::m_surface, nullptr);
 
@@ -232,7 +230,7 @@ namespace bs
 		//Recreate swapchain + stuff
 		bs::vk::createSwapChain(m_swapchain, *m_Device, m_scdetails, m_window);
 		bs::vk::createImageViews(m_scdetails, m_Device->getDevice());
-		bs::vk::createFramebuffers(rpass, m_scdetails, m_Device->getDevice());
+		bs::vk::createFramebuffers(*rpass, m_scdetails, m_Device->getDevice());
 
 		resized = false;
 		
