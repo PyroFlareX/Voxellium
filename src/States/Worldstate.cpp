@@ -63,12 +63,16 @@ void Worldstate::input(float dt)
 void Worldstate::update(float dt)
 {
 	constexpr auto windowflag = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar;
-	ImGui::SetNextWindowSize({250.0f, 75.0f});
+	ImGui::SetNextWindowSize({250.0f, 100.0f});
 	if(ImGui::Begin("Debug UI", nullptr, windowflag))
 	{
 		const auto& cam = app.getCamera();
 		ImGui::Text("Player Pos:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
 		ImGui::Text("Player Rot:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
+		
+		
+		const auto& io = ImGui::GetIO();
+		ImGui::Text("\nFPS: %0.3f", io.Framerate);
 	}
 	ImGui::End();
 }
