@@ -296,6 +296,19 @@ namespace bs::vk
 		vertexInputInfo.pVertexAttributeDescriptions = m_vertex_description.attributes.data();
 		m_gfxCreateInfo.pVertexInputState = &vertexInputInfo;
 
+
+		VkPipelineDepthStencilStateCreateInfo depthCreateInfo{};
+		depthCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthCreateInfo.pNext = nullptr;
+		depthCreateInfo.depthTestEnable = VK_TRUE;
+		depthCreateInfo.depthWriteEnable = VK_TRUE;
+		depthCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL; //enableDepthTest ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_ALWAYS;
+		depthCreateInfo.depthBoundsTestEnable = VK_FALSE;
+		depthCreateInfo.minDepthBounds = 0.0f;
+		depthCreateInfo.maxDepthBounds = 1.0f;
+		depthCreateInfo.stencilTestEnable = VK_FALSE;
+		m_gfxCreateInfo.pDepthStencilState = &depthCreateInfo;
+
 		//Creation of the pipeline
 		VkResult result = vkCreateGraphicsPipelines(p_device->getDevice(), VK_NULL_HANDLE, 1, &m_gfxCreateInfo, nullptr, &m_pipeline);
 		if(result != VK_SUCCESS)

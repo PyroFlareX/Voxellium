@@ -876,7 +876,7 @@ namespace bs::vk
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
-		std::vector<VkDynamicState> dynamicStateEnables = 
+		const std::vector<VkDynamicState> dynamicStateEnables = 
 		{
 			VK_DYNAMIC_STATE_VIEWPORT,
 			VK_DYNAMIC_STATE_SCISSOR
@@ -886,6 +886,18 @@ namespace bs::vk
 		dynState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynState.dynamicStateCount = static_cast<int>(dynamicStateEnables.size());
 		dynState.pDynamicStates = dynamicStateEnables.data();
+
+		//Depth
+		VkPipelineDepthStencilStateCreateInfo depthCreateInfo{};
+		depthCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthCreateInfo.pNext = nullptr;
+		depthCreateInfo.depthTestEnable = VK_TRUE;
+		depthCreateInfo.depthWriteEnable = VK_TRUE;
+		depthCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL; //enableDepthTest ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_ALWAYS;
+		depthCreateInfo.depthBoundsTestEnable = VK_FALSE;
+		depthCreateInfo.minDepthBounds = 0.0f;
+		depthCreateInfo.maxDepthBounds = 1.0f;
+		depthCreateInfo.stencilTestEnable = VK_FALSE;
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -902,6 +914,7 @@ namespace bs::vk
 		pipelineInfo.renderPass = rpass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineInfo.pDepthStencilState = &depthCreateInfo;
 
 		if (vkCreateGraphicsPipelines(device.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 		{

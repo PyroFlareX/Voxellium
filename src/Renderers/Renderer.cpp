@@ -172,11 +172,14 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 	extent.height = bs::vk::viewportheight;
 	extent.width = bs::vk::viewportwidth;
 	renderPassInfo.renderArea.extent = extent;
-	//Clear color for renderpass
-	//VkClearDepthStencilValue depthClear = {};
+
+	//Clear values for renderpass
 	VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+	VkClearValue clearDepth = { };
+	clearDepth.depthStencil.depth = 1.0f;
+	VkClearValue clearValues[2] = { clearColor, clearDepth };
+	renderPassInfo.clearValueCount = 2;
+	renderPassInfo.pClearValues = &clearValues[0];
 
 	//Primary Buffer Recording
 	//Begin Info

@@ -134,6 +134,7 @@ namespace bs
 	void Context::initAPI()
 	{
 		bs::vk::createInstance("Bathsalts");
+		bs::vk::createSurface(m_window);
 		m_device->init();
 
 		createContextRenderpass();
@@ -223,13 +224,6 @@ namespace bs
 
 	void Context::createSwapchain()
 	{
-		// bs::vk::createSurface(m_window);
-		//Create surface
-		if(glfwCreateWindowSurface(bs::vk::m_instance, getContext(), nullptr, &bs::vk::m_surface) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create window surface!");
-		}
-
 		//Create Swapchain
 		bs::vk::createSwapChain(m_swapchain, *m_device, m_scdetails, m_window);
 
