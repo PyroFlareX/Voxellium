@@ -9,7 +9,7 @@ class Camera;
 class Renderer
 {
 public:
-	Renderer(bs::Device* device);
+	Renderer(bs::Device* device, VkRenderPass genericPass);
 	~Renderer();
 
 	void drawObject(const bs::GameObject& entity);
@@ -31,12 +31,9 @@ public:
 	//Push the uniform buffer and image descriptor to the gpu
 	void pushGPUData(Camera& cam);
 
-	VkRenderPass getDefaultRenderPass() const;
-
 private:
 	void initGUI();
 
-	void initRenderpass();
 	void initDescriptorPool();
 	void initDescriptorSets();
 

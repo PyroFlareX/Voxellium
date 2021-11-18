@@ -5,7 +5,7 @@
 
 constexpr int numDescriptors = 2;
 
-Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
+Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: device(renderingDevice), m_renderpassdefault(genericPass)
 {
 	//Add textures
 	//Create image + texture
@@ -47,8 +47,7 @@ Renderer::Renderer(bs::Device* renderingDevice)	: device(renderingDevice)
 
 	//For IMGUI
 	initGUI();
-	//Init the renderpass
-	initRenderpass();
+	
 	//Init the command pool and the cmd buffer
 	initCommandPoolAndBuffers();
 
@@ -72,7 +71,6 @@ Renderer::~Renderer()
 	vkDestroyPipeline(device->getDevice(), imguipipeline, nullptr);
 	vkDestroyPipelineLayout(device->getDevice(), guilayout, nullptr);
 	// Destroy the rest of the Vulkan allocations
-	vkDestroyRenderPass(device->getDevice(), m_renderpassdefault, nullptr);
 	vkDestroyCommandPool(device->getDevice(), m_pool, nullptr);
 	vkDestroyDescriptorSetLayout(device->getDevice(), desclayout, nullptr);
 	vkDestroyDescriptorPool(device->getDevice(), m_descpool, nullptr);
@@ -213,16 +211,17 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 		//Execute all the cmd buffers for the general renderer
 		vkCmdExecuteCommands(cmd, renderLists.size() - 1, &renderLists[1]);
 		
-		
-		//AFTER ^ is done, THEN submit the ImGui Draw
-		vkCmdExecuteCommands(cmd, 1, &renderLists[0]);
+		//OTHERS
+		// ...
 
+		//AFTER ^ everything else is done, THEN submit the ImGui Draw
+		vkCmdExecuteCommands(cmd, 1, &renderLists[0]);
 
 		/// ENDING THE RECORDING
 		vkCmdEndRenderPass(cmd);
 		if(vkEndCommandBuffer(cmd) != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to record command buffer!");
+			throw std::runtime_error("Failed to record command buffer!");
 		}
 	}
 
@@ -296,78 +295,6 @@ void Renderer::pushGPUData(Camera& cam)
 	descWrite[1].pImageInfo = imageinfo.data();
 
 	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
-}
-
-VkRenderPass Renderer::getDefaultRenderPass() const
-{
-	return m_renderpassdefault;
-}
-
-void Renderer::initRenderpass()
-{
-	//Attachment to draw colors
-	VkAttachmentDescription colorAttachment{};
-	colorAttachment.flags = 0;
-	colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	//Attachment to have depth
-	const auto depthFormat = VK_FORMAT_D32_SFLOAT;
-	VkAttachmentDescription depthAttachment{};
-	depthAttachment.flags = 0;
-	depthAttachment.format = depthFormat;
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	//Array to hold the 2
-	VkAttachmentDescription attachmentDescriptions[2] = {colorAttachment, depthAttachment};
-
-	//Ref to color
-	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	//Ref to depth
-	VkAttachmentReference depthAttachmentRef{};
-	depthAttachmentRef.attachment = 1;
-	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass{};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-	VkSubpassDependency dependency{};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-	VkRenderPassCreateInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 2;
-	renderPassInfo.pAttachments = &attachmentDescriptions[0];
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
-
-	if (vkCreateRenderPass(device->getDevice(), &renderPassInfo, nullptr, &m_renderpassdefault) != VK_SUCCESS) 
-	{
-		throw std::runtime_error("failed to create render pass!");
-	}
 }
 
 void Renderer::initDescriptorPool()

@@ -61,8 +61,9 @@ private:
 	//Renderer
 	Renderer* m_renderer;
 
-	//Camera
+	// Camera
 	Camera m_camera;
+
 	//State storage
     std::vector<std::unique_ptr<Basestate>> m_states;
 	std::vector<std::function<void()>> m_statechanges;
