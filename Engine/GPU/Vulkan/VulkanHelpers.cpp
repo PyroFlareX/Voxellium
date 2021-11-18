@@ -937,7 +937,7 @@ namespace bs::vk
 		swapdetails.swapChainFramebuffers.resize(swapdetails.swapChainImageViews.size());
 		for (auto i = 0; i < swapdetails.swapChainImageViews.size(); i++) 
 		{
-			const VkImageView attachments[] = 
+			const VkImageView attachments[2] = 
 			{
 				swapdetails.swapChainImageViews[i],
 				depthImgView
@@ -951,11 +951,11 @@ namespace bs::vk
 			framebufferInfo.layers = 1;
 			
 			framebufferInfo.attachmentCount = 2;
-			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.pAttachments = &attachments[0];
 
 			if(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapdetails.swapChainFramebuffers[i]) != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to create framebuffer!");
+				throw std::runtime_error("Failed to create framebuffer!");
 			}
 		}
 	}

@@ -11,6 +11,8 @@ namespace bs
 	{
 	public:
 		Context(const std::string& title);
+		~Context();
+		
 		void setIcon(Image& icon);
 
 		void clear(); //Clear screen
@@ -21,8 +23,6 @@ namespace bs
 
 		GLFWwindow* getContext();
 		void setDeviceptr(Device* pdevice);
-
-		~Context();
 
 		SwapChainDetails m_scdetails;
 

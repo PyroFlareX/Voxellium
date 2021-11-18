@@ -100,14 +100,16 @@ namespace bs
 		bs::vk::inFlightFences.resize(bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS);
 		bs::vk::imagesInFlight.resize(m_scdetails.swapChainImages.size(), VK_NULL_HANDLE);
 
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		constexpr VkSemaphoreCreateInfo semaphoreInfo{ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
 
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		constexpr VkFenceCreateInfo fenceInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = VK_FENCE_CREATE_SIGNALED_BIT
+		};
 
-		for (size_t i = 0; i < bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS; i++) 
+		for (auto i = 0; i < bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS; i++) 
 		{
 			if (vkCreateSemaphore(m_Device->getDevice(), &semaphoreInfo, nullptr, &bs::vk::imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_Device->getDevice(), &semaphoreInfo, nullptr, &bs::vk::renderFinishedSemaphores[i]) != VK_SUCCESS ||

@@ -358,7 +358,7 @@ void Renderer::initRenderpass()
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = 2;
-	renderPassInfo.pAttachments = attachmentDescriptions;
+	renderPassInfo.pAttachments = &attachmentDescriptions[0];
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
