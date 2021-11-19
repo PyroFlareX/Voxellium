@@ -25,6 +25,14 @@ struct ChunkDrawInfo
 	u32 startOffset;
 };
 
+struct ChunkInstanceData
+{
+	pos_xyz position;
+	//Something to store the textures
+	//this is temp hopefully
+	u16 textureID;
+};
+
 class Chunk	:	public bs::NonCopyable
 {
 public:

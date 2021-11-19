@@ -96,7 +96,7 @@ void Worldstate::render(Renderer& renderer)
 		{
 			continue;
 		}*/
-		if(chunk.getChunkMesh().has_value())
+		if(chunk.hasMesh())
 		{
 			bs::Transform t;
 			t.pos = chunk_pos * CHUNK_SIZE;

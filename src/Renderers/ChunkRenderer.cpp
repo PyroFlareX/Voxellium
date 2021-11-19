@@ -1,7 +1,10 @@
 #include "ChunkRenderer.h"
 
+#include "../World/Meshing/ChunkMeshManager.h"
 #include <GPU/Vulkan/PipelineBuilder.h>
-#include "../World/Types/Chunk.h"
+
+constexpr u32 VERTEX_INPUT_BINDING = 0;
+constexpr u32 INSTANCE_INPUT_BINDING = 1;
 
 ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	: 
 	p_device(mainDevice), m_renderpass(rpass)
@@ -55,8 +58,8 @@ ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDesc
 	chunkPipelineBuilder.setRasterizingData(false, true);
 	chunkPipelineBuilder.setPushConstantSize(0);
 
-	//Create the chunk vertex description
-	chunkPipelineBuilder.useVertexDescription(bs::vk::getVertexDescription());
+	//Create the chunk vertex chunkDescription
+	chunkPipelineBuilder.useVertexDescription(getChunkInputDescription());
 	
 	chunkPipelineBuilder.build();
 	chunkPipelineBuilder.getResults(m_pipeline, m_pipelineLayout);
@@ -146,4 +149,58 @@ void ChunkRenderer::generateChunkData()
 	chunkdata.bufferType = bs::vk::BufferUsage::VERTEX_BUFFER;
 
 	
+}
+
+VertexInputDescription ChunkRenderer::getChunkInputDescription()
+{
+	VertexInputDescription chunkDescription;
+
+	///VERTEX
+	//This is for the per Vertex Binding
+	chunkDescription.bindings.emplace_back(VkVertexInputBindingDescription 
+	{
+		.binding = VERTEX_INPUT_BINDING,
+		.stride = sizeof(bs::vec4),
+		.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+	});
+	///INSTANCE
+	//This is for the per Instance Binding
+	chunkDescription.bindings.emplace_back(VkVertexInputBindingDescription 
+	{
+		.binding = INSTANCE_INPUT_BINDING,
+		.stride = sizeof(ChunkInstanceData),
+		.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
+	});
+
+	u32 cur_location = 0;
+
+	//Vertex Data will be stored at Location 0
+	//Chunk Vert Attribute
+	chunkDescription.attributes.emplace_back(VkVertexInputAttributeDescription 
+	{
+		.location = cur_location++,
+		.binding = VERTEX_INPUT_BINDING,
+		.format = VK_FORMAT_R32G32B32A32_SFLOAT,	//vec4
+		.offset = 0,
+	});
+
+	//Instance Data
+	//The Chunk Position attribute
+	chunkDescription.attributes.emplace_back(VkVertexInputAttributeDescription 
+	{
+		.location = cur_location++,
+		.binding = INSTANCE_INPUT_BINDING,
+		.format = VK_FORMAT_R32G32_SINT,	//vec3i
+		.offset = 0,
+	});
+	//The Array of Textures Attribute?
+	chunkDescription.attributes.emplace_back(VkVertexInputAttributeDescription 
+	{
+		.location = cur_location++,
+		.binding = INSTANCE_INPUT_BINDING,
+		.format = VK_FORMAT_R16_UINT,	//u16 or smth
+		.offset = sizeof(bs::vec3i),
+	});
+
+	return chunkDescription;
 }

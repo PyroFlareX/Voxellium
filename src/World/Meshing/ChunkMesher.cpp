@@ -27,12 +27,12 @@ bs::Mesh generateMeshFor(const World& world, Chunk& chunk)
 		chunk.setRemeshingFlag();
 		if(chunk.isEmpty())
 		{
-			return;
+			return bs::Mesh();
 		}
 	}
 	else
 	{
-		return;
+		return bs::Mesh();
 	}
 
 	/**	Algorithm layout:
@@ -240,6 +240,19 @@ const std::vector<bs::vec4>& createFullChunkMesh()
 	}//Faces
 
 	return meshVerts;
+}
+
+std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const Chunk& chunk)
+{
+	//@TODO: Make a more parallelized version with the job system
+	//That can be optionally enabled
+
+	std::vector<ChunkDrawInfo::Face> faces;
+
+
+
+
+	return faces;
 }
 
 constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept

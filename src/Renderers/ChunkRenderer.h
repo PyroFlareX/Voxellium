@@ -11,11 +11,12 @@ public:
 
 	void buildRenderCommands();
 
-
 	const VkCommandBuffer* getRenderCommand() const;
 	
 private:
 	void generateChunkData();
+
+	static VertexInputDescription getChunkInputDescription();
 
 	std::shared_ptr<bs::vk::Buffer> m_chunkbuffer;
 
