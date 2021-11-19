@@ -3,7 +3,7 @@
 
 
 //Helper functions
-constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept;
+constexpr static inline u16 toIndex(u16 x, u16 y, u16 z) noexcept;
 constexpr static inline u32 toIndex(pos_xyz block_pos) noexcept
 {
 	return block_pos.x + (block_pos.y * CHUNK_SIZE) + (block_pos.z * CHUNK_AREA);
@@ -249,13 +249,74 @@ std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const
 
 	std::vector<ChunkDrawInfo::Face> faces;
 
+	for(auto side = 0; side < NUM_SIDES; side += 1)
+	{
+		//Doing the sides
+		const u16 offset = NUM_FACES_PER_SIDE * side;
+		auto direction = FRONT;
 
+		switch (side)
+		{
+		case 1:
+			direction = BACK;
+			break;
+		case 2:
+			direction = UP;
+			break;
+		case 3:
+			direction = DOWN;
+			break;
+		case 4:
+			direction = LEFT;
+			break;
+		case 5:
+			direction = RIGHT;
+			break;
+		default:
+			break;
+		}
 
+		for(u16 z = 0; z < CHUNK_SIZE; z+=1)
+		{
+			for(u16 y = 0; y < CHUNK_SIZE; y+=1)
+			{
+				for(u16 x = 0; x < CHUNK_SIZE; x+=1)
+				{
+					const pos_xyz coords(x, y, z);
+					const auto block = chunk.getBlockAt(coords);
+
+					//Check if transparent
+					//If the current block is transparent, skip it
+					if(tempisTransparent(block))
+					{
+						continue;
+					}
+
+					//Check if the adj block is transparent
+					const auto adjBlock = getBlockAt(coords + direction, chunk, world);
+
+					//Check the blocks to the registry with the registry
+					//BlockDataRegistry
+					//Using this temp function for now to do it
+					//If the adjacent block is transparent, then add the face to the mesh
+					if(tempisTransparent(adjBlock))
+					{
+						u16 FaceIndex = toIndex(x, y, z) + offset;
+						faces.emplace_back(ChunkDrawInfo::Face
+						{
+							.textureID = (u16)0,
+							.faceIndex = FaceIndex,
+						});
+					}
+				}//x
+			}//y
+		}//z
+	}//Sides
 
 	return faces;
 }
 
-constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept
+constexpr static inline u16 toIndex(u16 x, u16 y, u16 z) noexcept
 {
 	return x + (y * CHUNK_SIZE) + (z * CHUNK_AREA);
 }

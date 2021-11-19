@@ -29,6 +29,7 @@ ChunkMeshManager::ChunkMeshManager(const World& world)	:	m_world(world)
 	};
 
 	std::shared_ptr<bs::vk::Buffer> chunk_indices = std::make_shared<bs::vk::Buffer>(basicDescription);
+	m_open_spans.emplace_back(0, basicDescription.size());
 	
 	basicDescription.bufferType = instancedType;
 	basicDescription.stride = sizeof(ChunkInstanceData);
@@ -76,7 +77,10 @@ bool ChunkMeshManager::isChunkCached(const Chunk& chunk)
 
 void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 {
+	const ChunkDrawInfo drawInfo = createDrawInfoFromChunk(chunk);
+	const IndexMesh indexMesh = buildIndexMesh(drawInfo);
 
+	
 }
 
 void ChunkMeshManager::condenseBuffer()
@@ -97,7 +101,7 @@ ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) cons
 	return c_info;
 }
 
-ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo& drawInfo) const
+const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo& drawInfo) const
 {
 	IndexMesh mesh;
 	mesh.meshindicies.reserve(drawInfo.numIndices);
@@ -109,9 +113,10 @@ ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo
 	if(shouldThreadIndexBuilding)
 	{
 		mesh.meshindicies.resize(drawInfo.numIndices);
+		const auto curJobs = jobSystem.backgroundJobs();
 		const u32 numWorkers = drawInfo.faces.size() / facesWorkPerThread;
 
-		for(auto executionID = 0; executionID < numWorkers; executionID += 1)
+		for(u32 executionID = 0; executionID < numWorkers; executionID += 1)
 		{
 			const Job indexBuilder = jobSystem.createJob([&, executionID](Job j)
 			{
@@ -140,7 +145,7 @@ ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo
 			memcpy(&(mesh.meshindicies[meshIndex]), indexArray.data(), indexArray.size() * sizeof(indexArray[0]));
 		}
 
-		jobSystem.wait();
+		jobSystem.wait(curJobs - numWorkers);
 	}
 	else
 	{
@@ -155,4 +160,9 @@ ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo
 	}
 
 	return mesh;
+}
+
+u32 ChunkMeshManager::findOpenSlot(const u32 data_length)
+{
+	return 0;
 }

@@ -50,20 +50,31 @@ private:
 	{
 		std::vector<u32> meshindicies;
 	};
-	IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
+	const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
+
+	u32 findOpenSlot(const u32 data_length);
 
 
 	///Member variables
+	//World Ref
 	const World& m_world;
 
+	//Render Distance
 	u32 m_renderDistance;
+
+	//Stores the open areas of the buffer
+	struct span
+	{
+		u32 start;
+		u32 length;
+	};
+	std::vector<span> m_open_spans;
 
 	//Draw Data Holder
 	std::vector<Chunk::ChunkMesh> m_chunk_draw_data;
 
 	//The actively drawn chunks
 	std::vector<pos_xyz> m_activeChunks;
-	
 	//Use like a GC
 	std::vector<pos_xyz> m_droppableChunks;
 };
