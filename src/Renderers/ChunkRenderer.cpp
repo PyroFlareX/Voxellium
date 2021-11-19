@@ -126,8 +126,9 @@ void ChunkRenderer::buildRenderCommands()
 	{
 		// vkCmdBindIndexBuffer(cmd, ->getAPIResource(), offset, VK_INDEX_TYPE_UINT16);
 
-		constexpr auto maxnumindices = 16 * 16 * 16 * 6 * 6;
-		constexpr auto maxnumverts = 16 * 16 * 16 * 6 * 4;
+		constexpr auto maxnumindices = 16 * 16 * 16 * 6 * 6;//147456
+		constexpr auto maxnumverts = 16 * 16 * 16 * 6 * 4;	//98304
+		constexpr auto minverts = 17 * 17 * 17; //4913
 		vkCmdDrawIndexed(cmd, maxnumindices, 1, 0, 0, 0);
 	}
 

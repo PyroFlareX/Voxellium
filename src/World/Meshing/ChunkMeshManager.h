@@ -35,9 +35,32 @@ public:
 	
 
 private:
-	u32 m_renderDistance;
-	
+	///Private Member Functions
 
+	void addChunkToBuffer(const Chunk& chunk);
+	//Compresses and realigns the space and offsets within the buffer
+	void condenseBuffer();
+
+	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
+	static const std::array<u32, 6> getIndicesFromFaceIndex(const u16 faceIndex);
+
+	struct IndexMesh
+	{
+		std::vector<u32> meshindicies;
+	};
+
+	IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
+
+
+	///Member variables
+
+	u32 m_renderDistance;
+
+	std::vector<Chunk::ChunkMesh> m_chunk_draw_data;
+
+	std::shared_ptr<bs::vk::Buffer> m_data_buffer;	
+
+	//The actively drawn chunks
 	std::vector<pos_xyz> m_activeChunks;
 	
 	//Use like a GC

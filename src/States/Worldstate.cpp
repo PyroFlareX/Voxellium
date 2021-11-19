@@ -117,10 +117,10 @@ void Worldstate::render(Renderer& renderer)
 			{
 				auto& chunk = world->getChunkAt(chunk_pos);
 				//Generate mesh
-				generateMeshFor(*world, chunk);
+				//generateMeshFor(*world, chunk);
 				//Upload mesh
-				bs::asset_manager->addModel(bs::vk::Model(*chunk.getChunkMesh(), bs::asset_manager->getTextureMutable(0).getDevice()),
-							std::string("chunk_" + std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + std::to_string(chunk_pos.z)));
+				//bs::asset_manager->addModel(bs::vk::Model(*chunk.getChunkMesh(), bs::asset_manager->getTextureMutable(0).getDevice()),
+				//			std::string("chunk_" + std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + std::to_string(chunk_pos.z)));
 			});
 			jobSystem.schedule(generateMesh, false);
 		}

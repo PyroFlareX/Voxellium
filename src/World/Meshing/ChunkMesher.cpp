@@ -1,7 +1,6 @@
 #include "ChunkMesher.h"
 #include "MeshingData.h"
 
-#include <Resources/Mesh.h>
 
 //Helper functions
 constexpr static inline u32 toIndex(u32 x, u32 y, u32 z) noexcept;
@@ -20,7 +19,7 @@ static inline bool tempisTransparent(block_t b)
 
 //IMPLEMENTATIONS FOR THE HEADER
 
-void generateMeshFor(const World& world, Chunk& chunk)
+bs::Mesh generateMeshFor(const World& world, Chunk& chunk)
 {
 	if(chunk.needsMesh())
 	{
@@ -121,8 +120,7 @@ void generateMeshFor(const World& world, Chunk& chunk)
 		}	//y
 	}	//z
 
-	//Now for the mesh to go to the owning chunk
-	chunk.setMesh(std::move(chunkMesh));
+	return chunkMesh;
 }
 
 //Meshing order should be like this:

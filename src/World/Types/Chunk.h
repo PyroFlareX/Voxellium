@@ -6,11 +6,24 @@ constexpr auto CHUNK_AREA = CHUNK_SIZE * CHUNK_SIZE;
 constexpr auto CHUNK_VOLUME = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 #include <array>
-#include <optional>
-#include <Resources/Mesh.h>
 
 #include <Types/BaseInheritables.h>
 #include "AliasTypes.h"
+
+struct ChunkDrawInfo
+{
+	pos_xyz chunk_pos;
+	struct Face
+	{
+		u16 textureID;
+		u16 faceIndex;
+	};
+
+	std::vector<Face> faces;
+
+	u32 numIndices;
+	u32 startOffset;
+};
 
 class Chunk	:	public bs::NonCopyable
 {
@@ -27,16 +40,18 @@ public:
 	pos_xyz getChunkPos() const noexcept;
 	//Checks if the chunk has any blocks (non air)
 	bool isEmpty() const noexcept;
-	//Returns whether the chunk needs a mesh built / has been updated
+	
+	//Returns whether the chunk needs to rebuild its mesh
 	bool needsMesh() const noexcept;
+
 	//Set the flag so that only one remesh on this is active
 	void setRemeshingFlag();
-
-	//to reset the mesh for the chunk
-	void setMesh(bs::Mesh&& new_mesh);
-
-	using chunk_mesh_t = std::optional<bs::Mesh>;
-	const chunk_mesh_t& getChunkMesh() const;
+	
+	//To give a handle to the (?) mesh
+	using ChunkMesh = std::shared_ptr<ChunkDrawInfo>;
+	void setMesh(const ChunkMesh managed_mesh);
+	bool hasMesh() const;
+	ChunkMesh getChunkMesh() const;
 
 	//Checks whether empty
 	bool checkIfEmpty() const noexcept;
@@ -47,12 +62,15 @@ private:
 	std::array<block_t, CHUNK_VOLUME> m_chunk_layout;
 	//The local position of the chunk in world (as chunk coordinates)
 	const pos_xyz m_pos;
+
 	//Caches whether the chunk is empty
 	bool m_empty;
-	//Whether the chunk has a mesh
-	chunk_mesh_t m_mesh;
 	
 	//Set when the chunk needs to be updated too (?)
 	//Whether the chunk wants a new mesh built
 	bool m_needs_mesh;
+
+	//A non-owning ref to the chunk's mesh
+	std::weak_ptr<ChunkDrawInfo> m_mesh_handle;
+	
 };
