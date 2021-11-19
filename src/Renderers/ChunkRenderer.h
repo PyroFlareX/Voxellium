@@ -9,6 +9,10 @@ public:
 	ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout);
 	~ChunkRenderer();
 
+	void buildRenderCommands();
+
+
+	const VkCommandBuffer* getRenderCommand() const;
 	
 private:
 	void generateChunkData();

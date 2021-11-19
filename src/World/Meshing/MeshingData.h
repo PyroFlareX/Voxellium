@@ -90,3 +90,39 @@ enum class dir
 
 	NUM_SIDES
 };
+
+///Listing a bunch of various struct layouts that could be possibly used for storing the data
+/*
+//AbsFace Description
+struct AbsBlockFace
+{
+	u16 textureID;
+	std::array<u16, 6> faceIndices;
+};
+
+struct FaceDescription
+{
+	//The Texture ID of the block face
+	u16 textureID;
+	//From 0 to 24576 (log2(24576) = 14.5849...), so 16 bits works
+	u16 faceID;
+
+	//Unsure about including this or not, but have the AO lighting here maybe?
+};
+
+//Chunk Description
+struct ChunkDescription
+{
+	//For position of chunk, probably could change to a vec3
+	bs::mat4 chunkTransform;
+	
+	std::vector<FaceDescription> facesList;
+};
+
+struct ChunkMesh
+{
+	bs::vec3 chunkTransform;
+
+	std::vector<FaceDescription> chunkFaces;
+};
+*/

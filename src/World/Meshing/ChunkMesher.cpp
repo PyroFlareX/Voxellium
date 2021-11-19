@@ -173,9 +173,9 @@ constexpr std::array<u16, 6> getIndicesFor()
 						baseIndex + front[3], baseIndex + front[4], baseIndex + front[5]);
 }
 
-const std::vector<bs::vec3>& createFullChunkMesh()
+const std::vector<bs::vec4>& createFullChunkMesh()
 {
-	static std::vector<bs::vec3> meshVerts;
+	static std::vector<bs::vec4> meshVerts;
 	if(!meshVerts.empty())
 	{
 		return meshVerts;	//Return it if already generated
@@ -184,25 +184,32 @@ const std::vector<bs::vec3>& createFullChunkMesh()
 	for(auto side = 0; side < 6; side+=1)
 	{
 		std::array<u32, 6> currentFace;
+		float direction = 0.0f; //F1, B2, T3, B4, L5, R6
 		switch (side)
 		{
 		case 0:
 			currentFace = front;
+			direction = 10.0;
 			break;
 		case 1:
 			currentFace = back;
+			direction = 20.0;
 			break;
 		case 2:
 			currentFace = top;
+			direction = 30.0;
 			break;
 		case 3:
 			currentFace = bottom;
+			direction = 40.0;
 			break;
 		case 4:
 			currentFace = left;
+			direction = 50.0;
 			break;
 		case 5:
 			currentFace = right;
+			direction = 60.0;
 			break;
 		
 		default:
@@ -225,10 +232,10 @@ const std::vector<bs::vec3>& createFullChunkMesh()
 					const auto& v4 = vertices[currentFace[TOP_LEFT]];
 
 					//Add the verticies to the vector
-					meshVerts.emplace_back(v1 + coords);
-					meshVerts.emplace_back(v2 + coords);
-					meshVerts.emplace_back(v3 + coords);
-					meshVerts.emplace_back(v4 + coords);
+					meshVerts.emplace_back(bs::vec4(v1 + coords, direction + 1));
+					meshVerts.emplace_back(bs::vec4(v2 + coords, direction + 2));
+					meshVerts.emplace_back(bs::vec4(v3 + coords, direction + 3));
+					meshVerts.emplace_back(bs::vec4(v4 + coords, direction + 4));
 				}//x
 			}//y
 		}//z

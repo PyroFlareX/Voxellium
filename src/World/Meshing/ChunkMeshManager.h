@@ -12,7 +12,7 @@ public:
 	ChunkMeshManager();
 	~ChunkMeshManager();
 
-	//Set the render distance in number of chunks, the radius from the player
+	//Set the render distance in number of chunks, as a radius around the player
 	void setRenderDistance(const u32 renderDistance);
 
 	//Tries to cache the chunk passed
@@ -36,9 +36,10 @@ public:
 
 private:
 	u32 m_renderDistance;
-
 	
 
 	std::vector<pos_xyz> m_activeChunks;
+	
+	//Use like a GC
 	std::vector<pos_xyz> m_droppableChunks;
 };

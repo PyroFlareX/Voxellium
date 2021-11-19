@@ -60,32 +60,32 @@ namespace bs::vk
 		{
 			bufferInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		}
-		else if (m_desc.bufferType == bs::vk::BufferUsage::INDEX_BUFFER)
+		if (m_desc.bufferType == bs::vk::BufferUsage::INDEX_BUFFER)
 		{
 			bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		}
-		else if (m_desc.bufferType == bs::vk::BufferUsage::UNIFORM_BUFFER)
+		if (m_desc.bufferType == bs::vk::BufferUsage::UNIFORM_BUFFER)
 		{
 			bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		}
-		else if (m_desc.bufferType == bs::vk::BufferUsage::STORAGE_BUFFER)
+		if (m_desc.bufferType == bs::vk::BufferUsage::STORAGE_BUFFER)
 		{
 			bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		}
-		else if (m_desc.bufferType == bs::vk::BufferUsage::INDIRECT_BUFFER)
+		if (m_desc.bufferType == bs::vk::BufferUsage::INDIRECT_BUFFER)
 		{
 			bufferInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 		}
-		else if (m_desc.bufferType == bs::vk::BufferUsage::TRANSFER_BUFFER)
+		if (m_desc.bufferType == bs::vk::BufferUsage::TRANSFER_BUFFER)
 		{
 			bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
 		}
-		else
+		/*else
 		{
 			bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 			std::cout << "There is a buffer allocation description issue!\n";
-		}
+		}*/
 		
 		vmaCreateBuffer(m_desc.dev->getAllocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr);
 
