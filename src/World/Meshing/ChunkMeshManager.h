@@ -52,7 +52,7 @@ private:
 	};
 	const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
 
-	u32 findOpenSlot(const u32 data_length);
+	i64 findOpenSlot(const u32 data_length);
 
 
 	///Member variables

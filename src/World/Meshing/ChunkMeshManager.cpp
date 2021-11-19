@@ -77,10 +77,16 @@ bool ChunkMeshManager::isChunkCached(const Chunk& chunk)
 
 void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 {
-	const ChunkDrawInfo drawInfo = createDrawInfoFromChunk(chunk);
+	ChunkDrawInfo drawInfo = createDrawInfoFromChunk(chunk);
 	const IndexMesh indexMesh = buildIndexMesh(drawInfo);
 
-	
+	const auto baseOffset = findOpenSlot(indexMesh.meshindicies.size() * sizeof(indexMesh.meshindicies[0]));
+
+	if(baseOffset < 0)
+	{
+		//COULD NOT ALLOCATE!!!
+		return;
+	}
 }
 
 void ChunkMeshManager::condenseBuffer()
@@ -95,7 +101,6 @@ ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) cons
 
 	c_info.faces = generateFacesForChunk(m_world, chunk);
 	c_info.numIndices = c_info.faces.size() * 6;
-
 	c_info.startOffset = 0;
 
 	return c_info;
@@ -162,7 +167,24 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 	return mesh;
 }
 
-u32 ChunkMeshManager::findOpenSlot(const u32 data_length)
+i64 ChunkMeshManager::findOpenSlot(const u32 data_length)
 {
-	return 0;
+	for(auto& freeSpace : m_open_spans)
+	{
+		const auto space = freeSpace.length - freeSpace.start;
+		if(space >= data_length)
+		{
+			u32 startByte = freeSpace.start;
+			//End byte
+			const auto end = startByte + data_length;
+
+			//Change the space in the data buffer
+			freeSpace.start = end;				// += data_length;
+			freeSpace.length -= data_length;	//
+			
+			return startByte;
+		}
+	}
+	
+	return -1;
 }
