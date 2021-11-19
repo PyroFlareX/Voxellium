@@ -9,14 +9,12 @@ namespace bs::vk
 	//Type of buffer
 	enum BufferUsage
 	{
-		VERTEX_BUFFER,
-		INDEX_BUFFER,
-		UNIFORM_BUFFER,
-		STORAGE_BUFFER,
-		INDIRECT_BUFFER,
-		TRANSFER_BUFFER,
-
-		BUFFER_TYPE_COUNT
+		VERTEX_BUFFER = 1 << 0,
+		INDEX_BUFFER = 1 << 1,
+		UNIFORM_BUFFER = 1 << 2,
+		STORAGE_BUFFER = 1 << 3,
+		INDIRECT_BUFFER = 1 << 4,
+		TRANSFER_BUFFER = 1 << 5
 	};
 
 	//Describes the layout of the buffer

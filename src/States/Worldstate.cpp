@@ -72,7 +72,7 @@ void Worldstate::update(float dt)
 		
 		
 		const auto& io = ImGui::GetIO();
-		ImGui::Text("\nFPS: %0.3f", io.Framerate);
+		ImGui::Text("\nFPS: %0.2f", io.Framerate);
 	}
 	ImGui::End();
 }

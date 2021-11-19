@@ -174,10 +174,10 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 	renderPassInfo.renderArea.extent = extent;
 
 	//Clear values for renderpass
-	VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+	const VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 	VkClearValue clearDepth = { };
 	clearDepth.depthStencil.depth = 1.0f;
-	VkClearValue clearValues[2] = { clearColor, clearDepth };
+	const VkClearValue clearValues[2] = { clearColor, clearDepth };
 	renderPassInfo.clearValueCount = 2;
 	renderPassInfo.pClearValues = &clearValues[0];
 
@@ -191,7 +191,7 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 		//Begin Recording the buffer
 		if(vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to begin recording command buffer!");
+			throw std::runtime_error("Failed to begin recording command buffer!");
 		}
 		//Begin the renderpass
 		//VK_SUBPASS_CONTENTS_INLINE //VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS

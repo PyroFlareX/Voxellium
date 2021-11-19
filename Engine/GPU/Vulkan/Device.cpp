@@ -1,7 +1,5 @@
 #include "Device.h"
 
-
-
 namespace bs
 {
 	Device::Device()
@@ -66,31 +64,27 @@ namespace bs
 	{
 		static int i = 0;
 
-		VkResult result;
-
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		
-		VkSemaphore waitSemaphores[] = { bs::vk::imageAvailableSemaphores[i] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		const VkSemaphore waitSemaphores[] = { bs::vk::imageAvailableSemaphores[i] };
+		const VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
-
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cmdbuffer[0];
+		submitInfo.pCommandBuffers = cmdbuffer.data();
 
-
-		VkSemaphore signalSemaphores[] = { bs::vk::renderFinishedSemaphores[i] };
 		submitInfo.signalSemaphoreCount = 1;
+
+		const VkSemaphore* signalSemaphores = &bs::vk::renderFinishedSemaphores[i];
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		
 		vkResetFences(device, 1, &bs::vk::inFlightFences[i]);
-		result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, bs::vk::inFlightFences[i]);
 		
-
+		VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, bs::vk::inFlightFences[i]);
+		
 		if (result != VK_SUCCESS) 
 		{
 			std::cout << "Queue Submission error: " << result << "\n";

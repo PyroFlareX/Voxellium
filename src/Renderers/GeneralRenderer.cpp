@@ -1,6 +1,5 @@
 #include "GeneralRenderer.h"
 
-
 #include <GPU/Vulkan/PipelineBuilder.h>
 
 GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	: 
@@ -22,7 +21,7 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, Vk
 
 	if(vkAllocateCommandBuffers(p_device->getDevice(), &allocInfo, m_renderlist.data()) != VK_SUCCESS) 
 	{
-		throw std::runtime_error("failed to allocate command buffers!");
+		throw std::runtime_error("Failed to allocate command buffers!");
 	}
 
 	//Cmd buffer Inheritance info init
