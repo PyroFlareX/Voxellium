@@ -29,7 +29,7 @@ ChunkMeshManager::ChunkMeshManager(const World& world)	:	m_world(world)
 	};
 
 	std::shared_ptr<bs::vk::Buffer> chunk_indices = std::make_shared<bs::vk::Buffer>(basicDescription);
-	m_open_spans.emplace_back(0, basicDescription.size());
+	m_open_spans.emplace_back(0, basicDescription.size);
 	
 	basicDescription.bufferType = instancedType;
 	basicDescription.stride = sizeof(ChunkInstanceData);
@@ -52,6 +52,19 @@ void ChunkMeshManager::setRenderDistance(const u32 renderDistance)
 
 bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 {
+	ChunkDrawInfo drawInfo = createDrawInfoFromChunk(chunk);
+	const IndexMesh indexMesh = buildIndexMesh(drawInfo);
+
+	const auto baseOffset = findOpenSlot(indexMesh.meshindicies.size() * sizeof(indexMesh.meshindicies[0]));
+
+	if(baseOffset < 0)
+	{
+		//COULD NOT ALLOCATE!!!
+		return false;
+	}
+
+	//@TODO: Copy the Data to the buffer region specified
+
 	return false;
 }
 
@@ -77,16 +90,7 @@ bool ChunkMeshManager::isChunkCached(const Chunk& chunk)
 
 void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 {
-	ChunkDrawInfo drawInfo = createDrawInfoFromChunk(chunk);
-	const IndexMesh indexMesh = buildIndexMesh(drawInfo);
-
-	const auto baseOffset = findOpenSlot(indexMesh.meshindicies.size() * sizeof(indexMesh.meshindicies[0]));
-
-	if(baseOffset < 0)
-	{
-		//COULD NOT ALLOCATE!!!
-		return;
-	}
+	
 }
 
 void ChunkMeshManager::condenseBuffer()

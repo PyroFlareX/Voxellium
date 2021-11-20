@@ -187,27 +187,27 @@ const std::vector<bs::vec4>& createFullChunkMesh()
 		{
 		case 0:
 			currentFace = front;
-			direction = 10.0;
+			direction = 10.0f;
 			break;
 		case 1:
 			currentFace = back;
-			direction = 20.0;
+			direction = 20.0f;
 			break;
 		case 2:
 			currentFace = top;
-			direction = 30.0;
+			direction = 30.0f;
 			break;
 		case 3:
 			currentFace = bottom;
-			direction = 40.0;
+			direction = 40.0f;
 			break;
 		case 4:
 			currentFace = left;
-			direction = 50.0;
+			direction = 50.0f;
 			break;
 		case 5:
 			currentFace = right;
-			direction = 60.0;
+			direction = 60.0f;
 			break;
 		
 		default:

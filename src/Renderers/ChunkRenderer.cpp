@@ -124,15 +124,17 @@ void ChunkRenderer::buildRenderCommands()
 	// vkCmdBindVertexBuffers(cmd, 1, 1, &m_chunkbuffer->getAPIResource(), &offset);
 
 	//Temp section, replace when doing multidraw indirect
-	std::vector<Chunk*> chunklist;
-	for(const auto* chunk : chunklist)
+	std::vector<ChunkDrawInfo> chunklist;
+	for(const auto& chunk : chunklist)
 	{
 		// vkCmdBindIndexBuffer(cmd, ->getAPIResource(), offset, VK_INDEX_TYPE_UINT16);
 
 		constexpr auto maxnumindices = 16 * 16 * 16 * 6 * 6;//147456
 		constexpr auto maxnumverts = 16 * 16 * 16 * 6 * 4;	//98304
 		constexpr auto minverts = 17 * 17 * 17; //4913
-		vkCmdDrawIndexed(cmd, maxnumindices, 1, 0, 0, 0);
+		// chunk.
+		u32 instanceNum = 0;
+		vkCmdDrawIndexed(cmd, chunk.numIndices, 1, 0, 0, instanceNum);
 	}
 
 	vkEndCommandBuffer(cmd);
