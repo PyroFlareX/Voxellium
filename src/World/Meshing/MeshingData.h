@@ -100,18 +100,24 @@ namespace ideal_const
 
 	//Radius auto calculations
 	template<int view_distance>
-	constexpr int get_num_chunks_in_radius()
+	constexpr auto get_num_chunks_in_radius()
 	{
 		constexpr double pi = 3.14159265358979323846264338327950288;
-		constexpr double circlesquareratio = pi * 0.25; // pi / 4
-
 		constexpr double circle_area = view_distance * view_distance * pi;
-		return circle_area + 1;
+
+		return static_cast<size_t>(circle_area) + 1;
 	}
-	constexpr auto NUM_VERTICAL_CHUNKS = 16;
+	
 	constexpr auto chunk_radius = 12;
 
-	constexpr int NUM_CHUNKS_TO_RENDER = get_num_chunks_in_radius<chunk_radius>() * NUM_VERTICAL_CHUNKS;
+	constexpr auto NUM_VERTICAL_CHUNKS = 16;
+	constexpr auto NUM_CHUNKS_TO_RENDER = get_num_chunks_in_radius<chunk_radius>() * NUM_VERTICAL_CHUNKS;
+
+	//Data Size est. calculations
+
+	constexpr auto TEXTURE_DATA_ON_GPU = NUM_CHUNKS_TO_RENDER * MAX_TEXTURE_BUFFER_SIZE; //356253696 B; 347904 KB; 339.75 MB, or 340 MB @ 12 radius
+
+	constexpr auto TEXTURE_DATA_ON_GPU_MB = (TEXTURE_DATA_ON_GPU / 1024.0) / 1024.0;
 }
 
 
