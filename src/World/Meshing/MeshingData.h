@@ -79,6 +79,42 @@ constexpr auto NUM_VERTS_PER_SIDE = NUM_FACES_PER_SIDE * 4;
 constexpr auto NUM_FACES_IN_FULL_CHUNK = NUM_FACES_PER_SIDE * NUM_SIDES;
 constexpr auto NUM_VERTS_IN_FULL_CHUNK = NUM_FACES_IN_FULL_CHUNK * 4;
 
+//For ideal scenario
+namespace ideal_const
+{
+	constexpr auto NUM_VERTS_PER_SIDE = ::CHUNK_SIZE + 1;
+	constexpr auto NUM_VERTS_PER_CHUNK = NUM_VERTS_PER_SIDE * NUM_VERTS_PER_SIDE * NUM_VERTS_PER_SIDE;
+
+	constexpr auto MAX_FACES_PER_CHUNK = ::NUM_SIDES * ::CHUNK_VOLUME;
+	constexpr auto MAX_TEXTURES_PER_CHUNK = MAX_FACES_PER_CHUNK;	// 24 KB
+	constexpr auto MAX_TRIS_PER_CHUNK = MAX_FACES_PER_CHUNK * 2;
+
+	constexpr auto INDICES_PER_TRI = 3;
+	constexpr auto INDICES_PER_FACE = 6; //quad
+
+	constexpr auto MAX_INDICES_COUNT = INDICES_PER_FACE * MAX_FACES_PER_CHUNK;
+	constexpr auto MAX_UNIQUE_INDICES = NUM_VERTS_PER_CHUNK; //4913, so u16
+
+	constexpr auto MAX_TEXTURE_BUFFER_SIZE = (int)sizeof(u16) * MAX_TEXTURES_PER_CHUNK; // 48 KB
+
+
+	//Radius auto calculations
+	template<int view_distance>
+	constexpr int get_num_chunks_in_radius()
+	{
+		constexpr double pi = 3.14159265358979323846264338327950288;
+		constexpr double circlesquareratio = pi * 0.25; // pi / 4
+
+		constexpr double circle_area = view_distance * view_distance * pi;
+		return circle_area + 1;
+	}
+	constexpr auto NUM_VERTICAL_CHUNKS = 16;
+	constexpr auto chunk_radius = 12;
+
+	constexpr int NUM_CHUNKS_TO_RENDER = get_num_chunks_in_radius<chunk_radius>() * NUM_VERTICAL_CHUNKS;
+}
+
+
 enum class dir
 {
 	FRONT = 0,
