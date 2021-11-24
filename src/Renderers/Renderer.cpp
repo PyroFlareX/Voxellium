@@ -312,8 +312,8 @@ void Renderer::initDescriptorPool()
 	descpoolsize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descpoolsize[1].descriptorCount = bs::asset_manager->getNumTextures();
 
-	descpoolsize[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	descpoolsize[1].descriptorCount = 1;
+	descpoolsize[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descpoolsize[2].descriptorCount = 1;
 
 	descpoolinfo.pPoolSizes = &descpoolsize[0];
 	descpoolinfo.poolSizeCount = numDescriptors;
