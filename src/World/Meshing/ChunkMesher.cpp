@@ -229,11 +229,13 @@ const std::vector<bs::vec4>& createFullChunkMesh()
 					const auto& v3 = vertices[currentFace[TOP_RIGHT]];
 					const auto& v4 = vertices[currentFace[TOP_LEFT]];
 
+					const float component4 = toIndex(x, y, z) * 100.0f;
+
 					//Add the verticies to the vector
-					meshVerts.emplace_back(bs::vec4(v1 + coords, direction + 1));
-					meshVerts.emplace_back(bs::vec4(v2 + coords, direction + 2));
-					meshVerts.emplace_back(bs::vec4(v3 + coords, direction + 3));
-					meshVerts.emplace_back(bs::vec4(v4 + coords, direction + 4));
+					meshVerts.emplace_back(bs::vec4(v1 + coords, component4 + direction + 1));
+					meshVerts.emplace_back(bs::vec4(v2 + coords, component4 + direction + 2));
+					meshVerts.emplace_back(bs::vec4(v3 + coords, component4 + direction + 3));
+					meshVerts.emplace_back(bs::vec4(v4 + coords, component4 + direction + 4));
 				}//x
 			}//y
 		}//z

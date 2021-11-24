@@ -89,40 +89,5 @@ void Worldstate::render(Renderer& renderer)
 		obj.getCurrentTransform();
 		renderer.drawObject(obj);
 	}
-
-	for(const auto& [chunk_pos, chunk] : *m_world.getWorldMap())
-	{
-		/*if(chunk.isEmpty())
-		{
-			continue;
-		}*/
-		if(chunk.hasMesh())
-		{
-			bs::Transform t;
-			t.pos = chunk_pos * CHUNK_SIZE;
-			const std::string modelname("chunk_" + 
-				std::to_string(chunk_pos.x) + 
-				std::to_string(chunk_pos.y) + 
-				std::to_string(chunk_pos.z));
-
-			bs::GameObject chunk_obj(t, modelname);
-			chunk_obj.material.texture_id = 2;
-
-			renderer.drawObject(chunk_obj);
-		}
-		else
-		{
-			auto* world = &m_world;
-			const auto generateMesh = jobSystem.createJob([world, chunk_pos](Job j)
-			{
-				auto& chunk = world->getChunkAt(chunk_pos);
-				//Generate mesh
-				//generateMeshFor(*world, chunk);
-				//Upload mesh
-				//bs::asset_manager->addModel(bs::vk::Model(*chunk.getChunkMesh(), bs::asset_manager->getTextureMutable(0).getDevice()),
-				//			std::string("chunk_" + std::to_string(chunk_pos.x) + std::to_string(chunk_pos.y) + std::to_string(chunk_pos.z)));
-			});
-			jobSystem.schedule(generateMesh, false);
-		}
-	}
+	
 }

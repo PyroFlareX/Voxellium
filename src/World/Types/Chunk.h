@@ -28,15 +28,15 @@ struct ChunkDrawInfo
 struct ChunkInstanceData
 {
 	pos_xyz position;
-	//Something to store the textures
-	//this is temp hopefully
-	u16 textureID;
+	
+	//The offset into the storage buffer of where the textureIDs for the faces will be
+	u32 textureSlotOffset;
 };
 
 class Chunk	:	public bs::NonCopyable
 {
 public:
-	Chunk(pos_xyz pos);
+	Chunk(const pos_xyz pos);
 
 	//Get the block id for the block at the given position
 	block_t getBlockAt(const pos_xyz& local_position) const;
@@ -74,11 +74,10 @@ private:
 	//Caches whether the chunk is empty
 	bool m_empty;
 	
-	//Set when the chunk needs to be updated too (?)
+	//Set when the chunk needs to be updated too
 	//Whether the chunk wants a new mesh built
 	bool m_needs_mesh;
 
 	//A non-owning ref to the chunk's mesh
 	std::weak_ptr<ChunkDrawInfo> m_mesh_handle;
-	
 };

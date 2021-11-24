@@ -34,7 +34,6 @@ public:
 	// Returns false if it is queued to be removed
 	bool isChunkCached(const Chunk& chunk);
 	
-
 private:
 	///Private Member Functions
 	//Add the given chunk to the buffer (might add a location offset argument)
@@ -56,6 +55,7 @@ private:
 
 
 	///Member variables
+
 	//World Ref
 	const World& m_world;
 
@@ -90,7 +90,7 @@ constexpr std::array<u32, 6> ChunkMeshManager::getIndicesFromFaceIndex(const u16
 	constexpr auto NUM_INDICES_IN_FULL_CHUNK = NUM_FACES_IN_FULL_CHUNK * 6;
 	
 	//Indices order
-	constexpr std::array<u32, 6> front
+	constexpr std::array<u32, 6> indicesList
 	{
 		0, 1, 2,
 		2, 3, 0
@@ -101,7 +101,7 @@ constexpr std::array<u32, 6> ChunkMeshManager::getIndicesFromFaceIndex(const u16
 
 	return std::array<u32, 6>
 	{{
-		baseIndex + front[0], baseIndex + front[1], baseIndex + front[2],
-		baseIndex + front[3], baseIndex + front[4], baseIndex + front[5]
+		baseIndex + indicesList[0], baseIndex + indicesList[1], baseIndex + indicesList[2],
+		baseIndex + indicesList[3], baseIndex + indicesList[4], baseIndex + indicesList[5]
 	}};
 }
