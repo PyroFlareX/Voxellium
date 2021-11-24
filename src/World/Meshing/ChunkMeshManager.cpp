@@ -86,6 +86,8 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 	}
 	
 	drawInfo->instanceID = m_activeChunks.size();
+
+	std::lock_guard<std::mutex> g_array_lock(m_lock);
 	m_activeChunks.emplace_back(chunk.getChunkPos());
 	m_chunk_draw_data.emplace_back(drawInfo);
 
@@ -222,7 +224,7 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 
 	if(shouldThreadIndexBuilding)
 	{
-		mesh.meshindicies.resize(drawInfo.numIndices);
+		mesh.meshindicies.resize(drawInfo.faces.size() * 6);
 		const auto curJobs = jobSystem.remainingJobs();
 		const u32 numWorkers = drawInfo.faces.size() / facesWorkPerThread;
 
@@ -230,16 +232,19 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 		{
 			const Job indexBuilder = jobSystem.createJob([&, executionID](Job j)
 			{
-				const u32 start = executionID * facesWorkPerThread;//Starting Face
-				const u32 end = start + facesWorkPerThread;		//Ending Face
+				const u32 start = executionID * facesWorkPerThread;	//Starting Face
+				const u32 end = start + facesWorkPerThread;			//Ending Face
 
-				for(auto i = start; i < end; i+=1)
+				for(auto i = start; i < end; i += 1)
 				{
 					const u16 faceID = drawInfo.faces[i].faceIndex;
 					const u32 meshIndex = i * 6;
 
 					const auto indexArray = getIndicesFromFaceIndex(faceID);
-					memcpy(&(mesh.meshindicies[meshIndex]), indexArray.data(), indexArray.size() * sizeof(indexArray[0]));
+					for(auto j = 0; j < indexArray.size(); j += 1)
+					{
+						mesh.meshindicies[meshIndex + j] = indexArray[j];
+					}
 				}
 			});
 			jobSystem.schedule(indexBuilder);
@@ -252,7 +257,10 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 			const auto meshIndex = faceNum * 6;
 
 			const std::array<u32, 6> indexArray = getIndicesFromFaceIndex(faceID);
-			memcpy(&(mesh.meshindicies[meshIndex]), indexArray.data(), indexArray.size() * sizeof(indexArray[0]));
+			for(auto j = 0; j < indexArray.size(); j += 1)
+			{
+				mesh.meshindicies[meshIndex + j] = indexArray[j];
+			}
 		}
 
 		jobSystem.wait(curJobs);

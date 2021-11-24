@@ -2,6 +2,8 @@
 
 #include "../Types/Chunk.h"
 
+#include <mutex>
+
 class World;
 
 //Chunk Mesh Manager
@@ -70,6 +72,9 @@ private:
 
 	//Render Distance
 	u32 m_renderDistance;
+
+	//Vector Modification mutex
+	std::mutex m_lock;
 
 	//Stores the open areas of the buffer
 	struct span

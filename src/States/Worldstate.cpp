@@ -8,7 +8,7 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 	m_playerView.origin = {0.0f, 0.0f, 0.0f};
 
 	constexpr auto min = 0;
-	constexpr auto max = 1;
+	constexpr auto max = 2;
 
 	std::cout << "Generating Chunks and Meshes\n";
 
@@ -46,13 +46,13 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 
 					std::cout << "Caching Chunk result: " << (result ? "true" : "false") << "\n";
 				});
-				jobSystem.schedule(generateChunk, false);
+				jobSystem.schedule(generateChunk);
 				jobsScheduled += 1;
 			}
 		}
 	}
-	
-	while(jobSystem.backgroundJobs() > currentJobs)	{	}
+
+	jobSystem.wait(currentJobs);
 }
 
 Worldstate::~Worldstate()
