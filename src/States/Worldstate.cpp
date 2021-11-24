@@ -8,7 +8,7 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 	m_playerView.origin = {0.0f, 0.0f, 0.0f};
 
 	constexpr auto min = 0;
-	constexpr auto max = 2;
+	constexpr auto max = 1;
 
 	std::cout << "Generating Chunks and Meshes\n";
 
