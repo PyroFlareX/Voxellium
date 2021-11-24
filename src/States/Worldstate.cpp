@@ -89,5 +89,12 @@ void Worldstate::render(Renderer& renderer)
 		obj.getCurrentTransform();
 		renderer.drawObject(obj);
 	}
-	
+
+	static int prevRenderedChunks = 0;
+	if(prevRenderedChunks != m_world.getMeshManager().getNumChunks())
+	{
+		renderer.recreateChunkDrawCommands(m_world.getMeshManager().getChunkDrawData());
+		prevRenderedChunks = m_world.getMeshManager().getNumChunks();
+		std::cout << "Drawing: " << prevRenderedChunks << "\n";
+	}
 }

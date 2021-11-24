@@ -164,7 +164,6 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 	// FOR IM GUI BULLSHIT 
 	{
 		auto& cmd = renderLists.at(0);
-		
 		m_UIRenderer->finish(cmd);
 	}
 

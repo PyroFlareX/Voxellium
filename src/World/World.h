@@ -25,6 +25,9 @@ public:
 	Chunk& getChunkAt(const pos_xyz& chunk_coords_pos);
 
 	std::shared_ptr<ChunkMap> getWorldMap();
+
+	ChunkMeshManager& getMeshManager();
 private:
 	std::shared_ptr<ChunkMap> m_baseWorld;
+	ChunkMeshManager m_mesh_manager;
 };

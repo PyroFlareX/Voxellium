@@ -34,6 +34,12 @@ public:
 	// Returns false if it is queued to be removed
 	bool isChunkCached(const Chunk& chunk) const;
 	
+	//Gets the number of chunks in the buffer
+	u32 getNumChunks() const;
+
+	//Get the draw datas
+	const std::vector<Chunk::ChunkMesh>& getChunkDrawData() const;	
+
 private:
 	///Private Member Functions
 	struct IndexMesh

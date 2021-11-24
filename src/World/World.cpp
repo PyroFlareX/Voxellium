@@ -4,14 +4,14 @@
 
 #include <mutex>
 
-World::World()
+World::World()	:	m_mesh_manager(*this, 2)
 {
 	m_baseWorld = std::make_shared<ChunkMap>();
 	m_baseWorld->reserve(CHUNK_VOLUME);
 
 	//Generate some chunks
-	constexpr auto min = 0;
-	constexpr auto max = 1;
+	constexpr auto min = -3;
+	constexpr auto max = 3;
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -21,6 +21,7 @@ World::World()
 			{
 				const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
 				m_baseWorld->emplace(chunk_pos, chunk_pos);
+				
 			}
 		}
 	}
@@ -50,6 +51,8 @@ World::World()
 						}
 					}
 					chunk.checkIfEmpty();
+
+					m_mesh_manager.cacheChunk(chunk);
 				});
 				jobSystem.schedule(generateChunk);
 			}
@@ -127,4 +130,9 @@ Chunk& World::getChunkAt(const pos_xyz& chunk_coords_pos)
 std::shared_ptr<World::ChunkMap> World::getWorldMap()
 {
 	return m_baseWorld;
+}
+
+ChunkMeshManager& World::getMeshManager()
+{
+	return m_mesh_manager;
 }

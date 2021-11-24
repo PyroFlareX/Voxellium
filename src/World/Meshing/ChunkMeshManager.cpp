@@ -132,6 +132,16 @@ bool ChunkMeshManager::isChunkCached(const Chunk& chunk) const
 	return isChunkCached(chunk.getChunkPos());
 }
 
+u32 ChunkMeshManager::getNumChunks() const
+{
+	return m_activeChunks.size();
+}
+
+const std::vector<Chunk::ChunkMesh>& ChunkMeshManager::getChunkDrawData() const
+{
+	return m_chunk_draw_data;
+}
+
 void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 {
 	int indexOfChunk = 0;
