@@ -5,8 +5,6 @@
 
 namespace bs
 {
-
-
 	class Device
 	{
 	public:
@@ -22,7 +20,7 @@ namespace bs
 		SwapChainSupportDetails getSwapchainDetails();
 		VkDevice& getDevice();
 		VkDevice getDevice() const;
-		VkPhysicalDevice& getPhysicalDevice() { return physDevice; }
+		VkPhysicalDevice& getPhysicalDevice();
 
 		//Submit GFX work
 		void submitWork(std::vector<VkCommandBuffer>& cmdbuffer);
@@ -33,17 +31,27 @@ namespace bs
 		VmaAllocator& getAllocator();
 
 		VkQueue getPresentQueue();
+		VkQueue getGraphicsQueue();
+
+
+	private:
+		int getScore(VkPhysicalDevice device) const;
+
+		std::vector<std::pair<VkPhysicalDevice, int>> getPhysicalDevices() const;
+
+		void createDevice();
+
+		VkPhysicalDevice physDevice;
+		VkDevice device;
 
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
 
-	private:
-		VkPhysicalDevice physDevice;
-		VkDevice device;
-
 		VmaAllocator m_allocatorVMA;
-
 		VkCommandPool m_pool;
+
+		std::vector<const char*> requiredDeviceExtensions;
+		std::vector<const char*> optionalDeviceExtensions;
 
 		bool destroyed;
 	};

@@ -186,7 +186,6 @@ namespace bs::vk
 			createInfo.enabledLayerCount = 0;
 		}
 
-
 		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("Failed to create logical device!");
@@ -1015,7 +1014,7 @@ namespace bs::vk
 
 		if(vkCreateCommandPool(device.getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to create command pool!");
+			throw std::runtime_error("Failed to create command pool!");
 		}
 	}
 
@@ -1213,8 +1212,8 @@ namespace bs::vk
 		return shaderModule;
 	}
 	
-	
-	std::vector<const char*> getRequiredExtensions() {
+	std::vector<const char*> getRequiredExtensions()
+	{
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions;
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
