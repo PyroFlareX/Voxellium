@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <algorithm>
 
-constexpr int numDescriptors = 2;
+constexpr int numDescriptors = 3;
 
 Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: device(renderingDevice), m_renderpassdefault(genericPass)
 {
@@ -244,9 +244,7 @@ void Renderer::pushGPUData(Camera& cam)
 	bufferInfo1.offset = 0;
 	bufferInfo1.range = 192;
 
-	bs::Transform t;
-	t.pos = { 0.0f, 0.0f, 0.0f };
-	t.rot = { 0.0f, 0.0f, 0.0f };
+	const bs::Transform t;
 
 	struct MVPstruct
 	{
@@ -295,7 +293,7 @@ void Renderer::pushGPUData(Camera& cam)
 	descWrite[1].descriptorCount = imageinfo.size();
 	descWrite[1].pImageInfo = imageinfo.data();
 
-	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
+	vkUpdateDescriptorSets(device->getDevice(), numDescriptors - 1, &descWrite[0], 0, nullptr);
 }
 
 void Renderer::initDescriptorPool()
@@ -313,6 +311,9 @@ void Renderer::initDescriptorPool()
 
 	descpoolsize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descpoolsize[1].descriptorCount = bs::asset_manager->getNumTextures();
+
+	descpoolsize[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descpoolsize[1].descriptorCount = 1;
 
 	descpoolinfo.pPoolSizes = &descpoolsize[0];
 	descpoolinfo.poolSizeCount = numDescriptors;
@@ -340,11 +341,16 @@ void Renderer::initDescriptorSets()
 	setlayoutbinding[1].stageFlags = VK_SHADER_STAGE_ALL;
 	setlayoutbinding[1].descriptorCount = bs::asset_manager->getNumTextures();
 
+	setlayoutbinding[2].binding = 2;
+	setlayoutbinding[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	setlayoutbinding[2].stageFlags = VK_SHADER_STAGE_ALL;
+	setlayoutbinding[2].descriptorCount = 1;
+
 	//For texture indexing:
 	VkDescriptorSetLayoutBindingFlagsCreateInfo layoutbindingflags = {};
 	layoutbindingflags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
 	layoutbindingflags.bindingCount = numDescriptors;
-	VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT };
+	VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0 };
 	layoutbindingflags.pBindingFlags = flags;
 		
 	//Layout Creation for bindings
@@ -356,8 +362,7 @@ void Renderer::initDescriptorSets()
 	desclayoutinfo.pBindings = &setlayoutbinding[0];
 		
 	//Creating the layouts for the descriptor sets
-	VkResult result;
-	result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
+	VkResult result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
 	if(result != VK_SUCCESS)
 	{
 		std::cerr << "Creating Descriptor Set Layout Failed, result = " << result << "\n";

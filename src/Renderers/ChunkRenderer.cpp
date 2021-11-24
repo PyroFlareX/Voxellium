@@ -54,8 +54,8 @@ ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDesc
 	};
 	
 	bs::vk::GraphicsPipelineBuilder chunkPipelineBuilder(p_device, m_renderpass, desclayout);
-	chunkPipelineBuilder.addVertexShader("res/Shaders/vert.spv");
-	chunkPipelineBuilder.addFragmentShader("res/Shaders/frag.spv");
+	chunkPipelineBuilder.addVertexShader("res/Shaders/Chunk.vert.spv");
+	chunkPipelineBuilder.addFragmentShader("res/Shaders/Chunk.frag.spv");
 	chunkPipelineBuilder.setDrawMode(bs::vk::DrawMode::FILL);
 	chunkPipelineBuilder.setRasterizingData(false, true);
 	chunkPipelineBuilder.setPushConstantSize(0);

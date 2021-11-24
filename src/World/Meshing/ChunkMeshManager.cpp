@@ -90,7 +90,7 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 	drawInfo->instanceID = m_activeChunks.size();
 	m_activeChunks.emplace_back(chunk.getChunkPos());
 	m_chunk_draw_data.emplace_back(drawInfo);
-	
+
 	//Add chunk into the buffers
 	addChunkToBuffer(chunk);
 	
@@ -178,6 +178,26 @@ void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 		//Mutate the passed chunk
 		const_cast<Chunk*>(&chunk)->setMesh(drawInfo);
 	}
+
+	//UPDATE THE DESCRIPTOR SET FOR THE STORAGE BUFFER!!!
+	const VkDescriptorBufferInfo chunkTextureInfo
+	{
+		.buffer = face_texture_buffer->getAPIResource(),
+		.offset = instanceData.textureSlotOffset,
+		.range = NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
+	};
+
+	VkWriteDescriptorSet writeTextureIndexBuffer = {};
+	writeTextureIndexBuffer.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeTextureIndexBuffer.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeTextureIndexBuffer.dstSet = *bs::asset_manager->pDescsetglobal;
+	writeTextureIndexBuffer.dstBinding = 2;
+	writeTextureIndexBuffer.dstArrayElement = 0; //Starting array element
+	writeTextureIndexBuffer.descriptorCount = 1; //Number to write over
+	writeTextureIndexBuffer.pBufferInfo = &chunkTextureInfo;
+
+	const bs::Device* p_device = bs::asset_manager->getTextureMutable(0).getDevice();
+	vkUpdateDescriptorSets(p_device->getDevice(), 1, &writeTextureIndexBuffer, 0, nullptr);
 }
 
 void ChunkMeshManager::condenseBuffer()
