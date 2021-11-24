@@ -314,7 +314,7 @@ void Renderer::pushGPUData(Camera& cam)
 	descWrite[1].pImageInfo = imageinfo.data();
 
 	descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	descWrite[2].dstSet = m_descsetglobal;
 	descWrite[2].dstBinding = 2;
 	descWrite[2].dstArrayElement = 0; //Starting array element
@@ -345,7 +345,7 @@ void Renderer::initDescriptorPool()
 
 	descpoolinfo.pPoolSizes = &descpoolsize[0];
 	descpoolinfo.poolSizeCount = numDescriptors;
-	descpoolinfo.maxSets = 4;
+	descpoolinfo.maxSets = 100;
 
 	VkResult result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
 	if(result != VK_SUCCESS)
@@ -380,11 +380,12 @@ void Renderer::initDescriptorSets()
 	layoutbindingflags.bindingCount = numDescriptors;
 	VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0 };
 	layoutbindingflags.pBindingFlags = flags;
-		
+
+
 	//Layout Creation for bindings
 	VkDescriptorSetLayoutCreateInfo desclayoutinfo{};
 	desclayoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	desclayoutinfo.pNext = &layoutbindingflags;
+	desclayoutinfo.pNext = nullptr;//&layoutbindingflags;
 	desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 	desclayoutinfo.bindingCount = numDescriptors;
 	desclayoutinfo.pBindings = &setlayoutbinding[0];

@@ -68,6 +68,11 @@ ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDesc
 
 	//Make the chunk vertex mesh
 	generateChunkData();
+
+	//Build a demo cmd buffer so validation layers don't complain about it being empty
+	auto& cmd = m_renderlist[0];
+	vkBeginCommandBuffer(cmd, &m_beginInfo);
+	vkEndCommandBuffer(cmd);
 }
 
 ChunkRenderer::~ChunkRenderer()
@@ -148,7 +153,7 @@ void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& dra
 		
 		//From byte offset divided by stride to index offset
 		u32 baseIndex = chunk->startOffset / sizeof(u32);
-		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, baseIndex, 0, chunk->instanceID);
+		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, 0, 0, 0/*chunk->instanceID*/);
 	}
 
 	vkEndCommandBuffer(cmd);
@@ -161,7 +166,7 @@ const VkCommandBuffer* ChunkRenderer::getRenderCommand() const
 
 void ChunkRenderer::clearCommandBuffer()
 {
-	vkResetCommandBuffer(m_renderlist[0], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+	vkResetCommandPool(p_device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 }
 
 void ChunkRenderer::generateChunkData()

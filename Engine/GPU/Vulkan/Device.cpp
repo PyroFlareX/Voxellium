@@ -6,12 +6,13 @@ namespace bs
 	{
 		requiredDeviceExtensions =
 		{
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+			// VK_SHADER_INT_16
 		};
 
 		optionalDeviceExtensions = 
 		{
-			VK_NV_MESH_SHADER_EXTENSION_NAME
+			VK_NV_MESH_SHADER_EXTENSION_NAME,
 		};
 	}
 
@@ -335,39 +336,35 @@ namespace bs
 			queueCreateInfos.push_back(queueCreateInfo);
 		}
 
-		VkPhysicalDeviceFeatures2 deviceFeatures{};
-		deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		vkGetPhysicalDeviceFeatures(physDevice, &deviceFeatures.features);
-		vkGetPhysicalDeviceFeatures2(physDevice, &deviceFeatures);
+		//Request the designated features:
 
+		//Vulkan 1.2 features
 		VkPhysicalDeviceVulkan12Features requestedFeatures = {};
 		requestedFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 		requestedFeatures.descriptorIndexing = VK_TRUE;
 		requestedFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
 		requestedFeatures.runtimeDescriptorArray = VK_TRUE;
 		requestedFeatures.drawIndirectCount = VK_TRUE;
-		
-		/*requestedFeatures.shaderInputAttachmentArrayDynamicIndexing = VK_TRUE;
-		requestedFeatures.shaderUniformTexelBufferArrayDynamicIndexing = VK_TRUE;
-		requestedFeatures.shaderStorageTexelBufferArrayDynamicIndexing = VK_TRUE;
-		requestedFeatures.shaderUniformBufferArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE;
-		requestedFeatures.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
-		requestedFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-		requestedFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
-		requestedFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
-		requestedFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = VK_TRUE;
-		requestedFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = VK_TRUE;
-		requestedFeatures.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
-		requestedFeatures.descriptorBindingPartiallyBound = VK_TRUE;*/
-		
-		deviceFeatures.pNext = &requestedFeatures;
 
+		//Various other Features (vk 1.0)
+
+		VkPhysicalDeviceFeatures2 deviceFeatures{};
+		deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+		deviceFeatures.features.shaderInt16 = VK_TRUE;
+
+		//Must add to the pNext chain
+		deviceFeatures.pNext = &requestedFeatures;
+		
+		//Enumerate the other physical device features
+		vkGetPhysicalDeviceFeatures(physDevice, &deviceFeatures.features);
+		vkGetPhysicalDeviceFeatures2(physDevice, &deviceFeatures);
+
+		
+
+
+
+		//Defien the logical vulkan device
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
@@ -390,7 +387,7 @@ namespace bs
 			createInfo.enabledLayerCount = 0;
 		}
 
-		if (vkCreateDevice(physDevice, &createInfo, nullptr, &device) != VK_SUCCESS) 
+		if(vkCreateDevice(physDevice, &createInfo, nullptr, &device) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("Failed to create logical device!");
 		}
