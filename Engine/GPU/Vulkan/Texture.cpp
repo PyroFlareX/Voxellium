@@ -1,10 +1,13 @@
 #include "Texture.h"
+// #include "../../AssetManager/AssetManager.h"
 
 bs::vk::Texture::Texture(bs::Device* device)
 {
 	p_device = device;
 	// Create the img
 }
+
+// static int counter = 0;
 
 void bs::vk::Texture::loadFromImage(const bs::Image& img)
 {
@@ -15,16 +18,13 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
 	vkCreateSampler(p_device->getDevice(), &samplerInfo, nullptr, &sampler);
 
 	//Upload the img
-	
 	//Allocation Info
 	VmaAllocationCreateInfo imgAllocInfo = {};
 	imgAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 	imgAllocInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
 
 	// CREATE IMAGE
 	VkImageCreateInfo image{};
@@ -41,13 +41,9 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	image.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	image.tiling = VK_IMAGE_TILING_OPTIMAL;
 	image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	
 	image.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VkDeviceSize offset = 0;
-	void* texture = nullptr;
-	size_t sizeImg = sizeof(bs::u8vec4) * (int)img.getSize().x * (int)img.getSize().y;
-	VkDeviceSize sizeDev = sizeImg;
+	const size_t sizeImg = sizeof(bs::u8vec4) * img.getSize().x * img.getSize().y;
 
 	//Copy the address to this ptr
 	void* dataPtr = nullptr;
@@ -63,7 +59,7 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	bufdesc.size = sizeImg;
 	bufdesc.stride = 4;
 	bufdesc.bufferData = dataPtr;
-	bs::vk::Buffer stagingbuffer(bufdesc);
+	auto stagingbuffer = std::make_shared<bs::vk::Buffer>(bufdesc);
 
 	vmaCreateImage(p_device->getAllocator(), &image, &imgAllocInfo, &textureImg, &textureAllocation, nullptr);
 	
@@ -89,7 +85,6 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 
 		//barrier the image into the transfer-receive layout
 		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
-	
 
 		//COPY
 		VkBufferImageCopy copyRegion = {};
@@ -104,7 +99,7 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 		copyRegion.imageExtent = image.extent;
 
 		//copy the buffer into the image
-		vkCmdCopyBufferToImage(cmd, stagingbuffer.getAPIResource(), textureImg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+		vkCmdCopyBufferToImage(cmd, stagingbuffer->getAPIResource(), textureImg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 		VkImageMemoryBarrier imageBarrier_toReadable = imageBarrier_toTransfer;
 
@@ -135,13 +130,16 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 
 	if (vkCreateImageView(p_device->getDevice(), &createInfo, nullptr, &textureImgView) != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to create image views!");
+		throw std::runtime_error("Failed to create image views!");
 	}
+	//const std::string buffer_name = std::string("textureStagingBuffer") + std::to_string(counter++);
+	//bs::asset_manager->addBuffer(stagingbuffer, buffer_name);
 }
 
 void bs::vk::Texture::destroy()
 {
-	vkDestroySampler(p_device->getDevice(), sampler, nullptr);
 	vkDestroyImageView(p_device->getDevice(), textureImgView, nullptr);
 	vmaDestroyImage(p_device->getAllocator(), textureImg, textureAllocation);
+	
+	vkDestroySampler(p_device->getDevice(), sampler, nullptr);
 }

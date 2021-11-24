@@ -168,9 +168,11 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 	renderPassInfo.framebuffer = fbo.handle[index];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	//Extent defining for renderpass
-	VkExtent2D extent;
-	extent.height = bs::vk::viewportheight;
-	extent.width = bs::vk::viewportwidth;
+	const VkExtent2D extent
+	{
+		.width = bs::vk::viewportwidth,
+		.height = bs::vk::viewportheight,
+	};
 	renderPassInfo.renderArea.extent = extent;
 
 	//Clear values for renderpass
@@ -200,25 +202,21 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 		///	ACTUAL RECORDING DONE HERE:
 
 		/**
-		 * Order: 
-		 * #1: General Renderer
+		 * Order: (if/when it matters, depth buffer makes this partially irrelevant)
+		 * #1: General Renderer / UI
 		 * ...
 		 * Chunk Renderer
 		 * 
 		 * The others
 		 * ...
-		 * #Last: ImGui Renderer
 		 * 
 		**/
 		
-		//Execute all the cmd buffers for the general renderer
-		vkCmdExecuteCommands(cmd, renderLists.size() - 1, &renderLists[1]);
+		//Execute all the cmd buffers for the general renderer and UI
+		vkCmdExecuteCommands(cmd, renderLists.size(), renderLists.data());
 		
 		//OTHERS
 		// ...
-
-		//AFTER ^ everything else is done, THEN submit the ImGui Draw
-		vkCmdExecuteCommands(cmd, 1, &renderLists[0]);
 
 		/// ENDING THE RECORDING
 		vkCmdEndRenderPass(cmd);

@@ -14,7 +14,7 @@ public:
 
 	void clearQueue();
 
-	std::vector<VkCommandBuffer>& getRenderlists();
+	std::vector<VkCommandBuffer> getRenderlists();
 private:
 	std::vector<bs::GameObject> m_queue;
 	

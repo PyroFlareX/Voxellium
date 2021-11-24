@@ -15,6 +15,11 @@ namespace bs
 		{
 			texture.destroy();
 		}
+
+		for(auto& [ID, buffer] : m_buffers.getMap())
+		{
+			buffer.reset();
+		}
 	}
 
 	void AssetManager::addTexture(bs::vk::Texture& texture, short id) noexcept
