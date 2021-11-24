@@ -2,6 +2,8 @@
 
 #include <Engine.h>
 
+#include "../World/World.h"
+
 //@TODO: Add the necessary stuff
 class ChunkRenderer
 {
@@ -9,7 +11,7 @@ public:
 	ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout);
 	~ChunkRenderer();
 
-	void buildRenderCommands();
+	void buildRenderCommands(const std::vector<Chunk::ChunkMesh>& drawInfos);
 
 	const VkCommandBuffer* getRenderCommand() const;
 	

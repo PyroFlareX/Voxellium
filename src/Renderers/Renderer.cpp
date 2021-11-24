@@ -60,6 +60,8 @@ Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: devi
 
 	//Create General Renderer
 	m_generalRenderer = std::make_unique<GeneralRenderer>(device, m_renderpassdefault, desclayout);
+	//Create the chunk renderer
+	m_chunkRenderer = std::make_unique<ChunkRenderer>(device, m_renderpassdefault, desclayout);
 	//Create UI Renderer Pipeline And the Renderer
 	bs::vk::createUIPipeline(*device, imguipipeline, m_renderpassdefault, guilayout, desclayout);
 	m_UIRenderer = std::make_unique<UIRenderer>(device, imguipipeline, guilayout);
@@ -128,6 +130,11 @@ void Renderer::drawObject(const bs::GameObject& entity)
 void Renderer::drawText()
 {
 	m_UIRenderer->addText("Example Text", {500, 500});
+}
+
+void Renderer::recreateChunkDrawCommands(const std::vector<Chunk::ChunkMesh>& drawInfos)
+{
+	m_chunkRenderer->buildRenderCommands(drawInfos);
 }
 
 void Renderer::render(Camera& cam)
@@ -215,6 +222,9 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 		//Execute all the cmd buffers for the general renderer and UI
 		vkCmdExecuteCommands(cmd, renderLists.size(), renderLists.data());
 		
+
+		//Chunk Renderer
+		vkCmdExecuteCommands(cmd, 1, m_chunkRenderer->getRenderCommand());
 		//OTHERS
 		// ...
 

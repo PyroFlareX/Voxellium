@@ -77,7 +77,7 @@ ChunkRenderer::~ChunkRenderer()
 	vkDestroyCommandPool(p_device->getDevice(), m_pool, nullptr);
 }
 
-void ChunkRenderer::buildRenderCommands()
+void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& drawInfos)
 {
 	//Dynamic State Stuff:
 	const VkExtent2D extent
@@ -138,16 +138,15 @@ void ChunkRenderer::buildRenderCommands()
 	vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer(chunk_buffer_name)->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
 
 	//Temp section, replace when doing multidraw indirect
-	std::vector<ChunkDrawInfo> chunklist;
-	for(const auto& chunk : chunklist)
+	for(const auto& chunk : drawInfos)
 	{
 		constexpr auto maxnumindices = 16 * 16 * 16 * 6 * 6;//147456
 		constexpr auto maxnumverts = 16 * 16 * 16 * 6 * 4;	//98304
 		constexpr auto minverts = 17 * 17 * 17; //4913
 		
 		//From byte offset divided by stride to index offset
-		u32 baseIndex = chunk.startOffset / sizeof(u32);
-		vkCmdDrawIndexed(cmd, chunk.numIndices, 1, baseIndex, 0, chunk.instanceID);
+		u32 baseIndex = chunk->startOffset / sizeof(u32);
+		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, baseIndex, 0, chunk->instanceID);
 	}
 
 	vkEndCommandBuffer(cmd);

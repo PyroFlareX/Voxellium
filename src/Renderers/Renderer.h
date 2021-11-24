@@ -15,6 +15,8 @@ public:
 	void drawObject(const bs::GameObject& entity);
 	//NOT DONE DO NOT USE
 	void drawText();
+	//Create Chunk Draw Lists
+	void recreateChunkDrawCommands(const std::vector<Chunk::ChunkMesh>& drawInfos);
 
 	//Pass tell the subrenderers to generate list queues
 	void render(Camera& cam);
@@ -26,6 +28,7 @@ public:
 	void clearQueue();
 
 	std::unique_ptr<GeneralRenderer>	m_generalRenderer;
+	std::unique_ptr<ChunkRenderer>		m_chunkRenderer;
 	std::unique_ptr<UIRenderer>			m_UIRenderer;
 		
 	//Push the uniform buffer and image descriptor to the gpu

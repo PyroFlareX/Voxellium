@@ -15,7 +15,7 @@ namespace bs::vk
 
 	VkInstance m_instance;
 	VkSurfaceKHR m_surface;
-	bool validationlayers = true;
+	bool validationlayers = false;
 	VkDebugUtilsMessengerEXT debugMessenger;
 
 	// SYNCHING GLOBALS
