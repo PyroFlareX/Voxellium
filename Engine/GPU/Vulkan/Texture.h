@@ -20,6 +20,8 @@ namespace bs::vk
 		// Upload the img here
 		void loadFromImage(const bs::Image& img);
 
+		void destroy();
+
 		texture_t getAPITextureInfo() const
 		{
 			return texture_t{ textureImg, textureImgView, sampler };

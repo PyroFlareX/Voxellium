@@ -9,7 +9,10 @@ namespace bs
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 		};
 
-		optionalDeviceExtensions = {};
+		optionalDeviceExtensions = 
+		{
+			VK_NV_MESH_SHADER_EXTENSION_NAME
+		};
 	}
 
 	Device::~Device() 
@@ -29,9 +32,6 @@ namespace bs
 				physDevice = device.first;
 			}
 		}
-
-		// bs::vk::pickPhysicalDevice(physDevice);
-		// bs::vk::createLogicalDevice(device, physDevice, graphicsQueue, presentQueue);
 
 		createDevice();
 
@@ -245,6 +245,7 @@ namespace bs
 		{
 			if(optionalExtensions.contains(extension.extensionName))
 			{
+				std::cout << "Has " << std::string(extension.extensionName) << "\n";
 				score += 1;
 			}
 		}
@@ -401,7 +402,7 @@ namespace bs
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties(physDevice, &properties);
 		const std::string deviceName(properties.deviceName);
-		u32 GPUID = properties.deviceID;
+		const u32 GPUID = properties.deviceID;
 
 		std::cout << "Chose GPU #" << GPUID << "\t\t" << deviceName << std::endl;
 	}

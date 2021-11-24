@@ -9,6 +9,14 @@ namespace bs
 
 	}
 
+	AssetManager::~AssetManager()
+	{
+		for(auto& [ID, texture] : m_textures.getMap())
+		{
+			texture.destroy();
+		}
+	}
+
 	void AssetManager::addTexture(bs::vk::Texture& texture, short id) noexcept
 	{
 		m_textures.addAsset(texture, id);

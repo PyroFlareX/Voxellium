@@ -19,6 +19,7 @@ namespace bs
 	{
 	public:
 		AssetManager();
+		~AssetManager();
 
 		void addTexture(bs::vk::Texture& texture, short id) noexcept;
 

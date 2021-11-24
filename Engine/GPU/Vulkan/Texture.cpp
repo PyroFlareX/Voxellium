@@ -4,8 +4,6 @@ bs::vk::Texture::Texture(bs::Device* device)
 {
 	p_device = device;
 	// Create the img
-
-	
 }
 
 void bs::vk::Texture::loadFromImage(const bs::Image& img)
@@ -139,4 +137,11 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	{
 		throw std::runtime_error("failed to create image views!");
 	}
+}
+
+void bs::vk::Texture::destroy()
+{
+	vkDestroySampler(p_device->getDevice(), sampler, nullptr);
+	vkDestroyImageView(p_device->getDevice(), textureImgView, nullptr);
+	vmaDestroyImage(p_device->getAllocator(), textureImg, textureAllocation);
 }
