@@ -1,6 +1,8 @@
 #include "ChunkRenderer.h"
 
 #include "../World/Meshing/ChunkMeshManager.h"
+#include "../World/Meshing/ChunkMesher.h"
+
 #include <GPU/Vulkan/PipelineBuilder.h>
 
 constexpr u32 VERTEX_INPUT_BINDING = 0;
@@ -63,6 +65,9 @@ ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDesc
 	
 	chunkPipelineBuilder.build();
 	chunkPipelineBuilder.getResults(m_pipeline, m_pipelineLayout);
+
+	//Make the chunk vertex mesh
+	generateChunkData();
 }
 
 ChunkRenderer::~ChunkRenderer()
@@ -95,10 +100,16 @@ void ChunkRenderer::buildRenderCommands()
 		.extent = extent,
 	};
 
-	//RECORDERINO!
+	//Names of the buffers
+	const std::string chunk_buffer_name("chunk_indices");
+	const std::string instance_buffer_name("chunk_instance_data");
+	const std::string texture_storage_buffer_name("chunk_texture_data");
+
+	//Command Buffer for recording
 	auto& cmd = m_renderlist[0];
 
 	//Begin the RECORDING!!!
+	clearCommandBuffer();
 	vkBeginCommandBuffer(cmd, &m_beginInfo);
 	
 	//Bind the descriptor set
@@ -118,23 +129,25 @@ void ChunkRenderer::buildRenderCommands()
 
 	VkDeviceSize offset = 0;
 	//Bind Mesh Vertex Data, this should be staged to the GPU to ensure MAX performance
-	vkCmdBindVertexBuffers(cmd, 0, 1, &m_chunkbuffer->getAPIResource(), &offset);
+	vkCmdBindVertexBuffers(cmd, VERTEX_INPUT_BINDING, 1, &m_chunkbuffer->getAPIResource(), &offset);
 
 	//Bind instance data buffer (holding transforms, textures, and whatever else)
-	// vkCmdBindVertexBuffers(cmd, 1, 1, &m_chunkbuffer->getAPIResource(), &offset);
+	vkCmdBindVertexBuffers(cmd, INSTANCE_INPUT_BINDING, 1, &bs::asset_manager->getBuffer(instance_buffer_name)->getAPIResource(), &offset);
+
+	//Bind Index Buffer Data
+	vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer(chunk_buffer_name)->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
 
 	//Temp section, replace when doing multidraw indirect
 	std::vector<ChunkDrawInfo> chunklist;
 	for(const auto& chunk : chunklist)
 	{
-		// vkCmdBindIndexBuffer(cmd, ->getAPIResource(), offset, VK_INDEX_TYPE_UINT16);
-
 		constexpr auto maxnumindices = 16 * 16 * 16 * 6 * 6;//147456
 		constexpr auto maxnumverts = 16 * 16 * 16 * 6 * 4;	//98304
 		constexpr auto minverts = 17 * 17 * 17; //4913
-		// chunk.
-		u32 instanceNum = 0;
-		vkCmdDrawIndexed(cmd, chunk.numIndices, 1, 0, 0, instanceNum);
+		
+		//From byte offset divided by stride to index offset
+		u32 baseIndex = chunk.startOffset / sizeof(u32);
+		vkCmdDrawIndexed(cmd, chunk.numIndices, 1, baseIndex, 0, chunk.instanceID);
 	}
 
 	vkEndCommandBuffer(cmd);
@@ -145,12 +158,30 @@ const VkCommandBuffer* ChunkRenderer::getRenderCommand() const
 	return &m_renderlist[0];
 }
 
+void ChunkRenderer::clearCommandBuffer()
+{
+	vkResetCommandBuffer(m_renderlist[0], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+}
+
 void ChunkRenderer::generateChunkData()
 {
-	bs::vk::BufferDescription chunkdata{};
-	chunkdata.bufferType = bs::vk::BufferUsage::VERTEX_BUFFER;
+	auto chunkVerts = createFullChunkMesh();
 
-	
+	std::cout << "Base Chunk Mesh Data:\n\t"
+		<< "Num Vertices: " << chunkVerts.size() << "\n\t"
+		<< "Size in Bytes: " << chunkVerts.size() * sizeof(bs::vec4) << "\n\t"
+		<< "TBD: " << " " << "\n";
+
+	const bs::vk::BufferDescription chunkdata
+	{
+		.dev = p_device,
+		.bufferType = bs::vk::BufferUsage::VERTEX_BUFFER,
+		.size = chunkVerts.size() * sizeof(bs::vec4),
+		.stride = sizeof(bs::vec4),
+		.bufferData = chunkVerts.data(),
+	};
+
+	m_chunkbuffer = std::make_shared<bs::vk::Buffer>(chunkdata);
 }
 
 VertexInputDescription ChunkRenderer::getChunkInputDescription()
@@ -192,15 +223,15 @@ VertexInputDescription ChunkRenderer::getChunkInputDescription()
 	{
 		.location = cur_location++,
 		.binding = INSTANCE_INPUT_BINDING,
-		.format = VK_FORMAT_R32G32_SINT,	//vec3i
+		.format = VK_FORMAT_R32G32B32_SINT,	//vec3i
 		.offset = 0,
 	});
-	//The Array of Textures Attribute?
+	//The offset index into the storage buffer for the chunk textures
 	chunkDescription.attributes.emplace_back(VkVertexInputAttributeDescription 
 	{
 		.location = cur_location++,
 		.binding = INSTANCE_INPUT_BINDING,
-		.format = VK_FORMAT_R16_UINT,	//u16 or smth
+		.format = VK_FORMAT_R32_UINT,	//u32 or smth
 		.offset = sizeof(bs::vec3i),
 	});
 

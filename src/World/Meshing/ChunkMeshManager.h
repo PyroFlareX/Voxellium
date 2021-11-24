@@ -10,7 +10,7 @@ class World;
 class ChunkMeshManager
 {
 public:
-	ChunkMeshManager(const World& world);
+	ChunkMeshManager(const World& world, const u32 renderDistance);
 	~ChunkMeshManager();
 
 	//Set the render distance in number of chunks, as a radius around the player
@@ -29,15 +29,22 @@ public:
 
 	//Checks whether the chunk is in the drawlist
 	// Returns false if it is queued to be removed
-	bool isChunkCached(const pos_xyz chunkPosition);
+	bool isChunkCached(const pos_xyz chunkPosition) const;
 	//Checks whether the chunk is in the drawlist
 	// Returns false if it is queued to be removed
-	bool isChunkCached(const Chunk& chunk);
+	bool isChunkCached(const Chunk& chunk) const;
 	
 private:
 	///Private Member Functions
+	struct IndexMesh
+	{
+		std::vector<u32> meshindicies;
+	};
+
 	//Add the given chunk to the buffer (might add a location offset argument)
 	void addChunkToBuffer(const Chunk& chunk);
+
+	// void updateChunk();
 
 	//Compresses and realigns the space and offsets within the buffer
 	void condenseBuffer();
@@ -45,14 +52,10 @@ private:
 	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
 	static constexpr std::array<u32, 6> getIndicesFromFaceIndex(const u16 faceIndex);
 
-	struct IndexMesh
-	{
-		std::vector<u32> meshindicies;
-	};
 	const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
 
-	i64 findOpenSlot(const u32 data_length);
-
+	i64 findOpenSlot(const u32 data_length) const;
+	bool reserveSlot(const u32 start, const u32 data_length);
 
 	///Member variables
 

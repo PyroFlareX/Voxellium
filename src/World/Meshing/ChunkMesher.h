@@ -1,11 +1,10 @@
 #pragma once
 
-// #include <Types/Types.h>
+
 #include <Resources/Mesh.h>
 #include "../Types/Chunk.h"
 
 class World;
-class Chunk;
 
 //Generate the mesh for the passed chunk, CPU Single-Threaded
 bs::Mesh generateMeshFor(const World& world, Chunk& chunk);

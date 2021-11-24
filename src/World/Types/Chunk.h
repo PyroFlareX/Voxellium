@@ -23,6 +23,7 @@ struct ChunkDrawInfo
 
 	u32 numIndices;
 	u32 startOffset;
+	u32 instanceID;
 };
 
 struct ChunkInstanceData
@@ -30,6 +31,7 @@ struct ChunkInstanceData
 	pos_xyz position;
 	
 	//The offset into the storage buffer of where the textureIDs for the faces will be
+	//This is equivalent to the index within the Mesh Manager of the chunk
 	u32 textureSlotOffset;
 };
 
