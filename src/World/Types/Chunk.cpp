@@ -89,7 +89,7 @@ void Chunk::setMesh(const ChunkMesh managed_mesh)
 
 bool Chunk::hasMesh() const
 {
-	return m_mesh_handle.expired();
+	return !m_mesh_handle.expired();
 }
 	
 Chunk::ChunkMesh Chunk::getChunkMesh() const

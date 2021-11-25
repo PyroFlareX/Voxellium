@@ -6,6 +6,54 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 	m_playerView.rot = {0.0f, 180.0f, 0.0f};
 	m_playerView.scale = {0.0f, 0.0f, 0.0f};
 	m_playerView.origin = {0.0f, 0.0f, 0.0f};
+
+	constexpr auto min = 0;
+	constexpr auto max = 1;
+
+	std::cout << "Generating Chunks and Meshes\n";
+
+	const auto currentJobs = jobSystem.remainingJobs();
+	u32 jobsScheduled = 0;
+
+	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
+	{
+		for(auto chunk_y = 0; chunk_y < max; ++chunk_y)
+		{
+			for(auto chunk_z = min; chunk_z < max; ++chunk_z)
+			{
+				const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
+				auto* world_ptr = &m_world;
+				const auto generateChunk = jobSystem.createJob([world_ptr, chunk_pos](Job j)
+				{
+					auto& chunk = world_ptr->getChunkAt(chunk_pos);
+					for(auto z = 0; z < CHUNK_SIZE; z+=1)
+					{
+						for(auto y = 0; y < CHUNK_SIZE; y+=1)
+						{
+							for(auto x = 0; x < CHUNK_SIZE; x+=1)
+							{
+								const pos_xyz worldpos(chunk_pos.x * CHUNK_SIZE + x, 
+														chunk_pos.y * CHUNK_SIZE + y, 
+														chunk_pos.z * CHUNK_SIZE + z);
+
+								chunk.setBlockAt({x, y, z}, y % 2);
+							}
+						}
+					}
+					chunk.checkIfEmpty();
+
+					const bool result = world_ptr->getMeshManager().cacheChunk(chunk);
+
+					std::cout << "Caching Chunk result: " << (result ? "true" : "false") << "\n";
+				});
+				jobSystem.schedule(generateChunk, false);
+				jobsScheduled += 1;
+			}
+		}
+	}
+
+	std::cout << "Jobs Scheduled: " << jobsScheduled << "\n";
+	while(jobSystem.backgroundJobs() > currentJobs)	{	}
 }
 
 Worldstate::~Worldstate()

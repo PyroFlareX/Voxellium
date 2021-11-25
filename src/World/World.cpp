@@ -10,8 +10,8 @@ World::World()	:	m_mesh_manager(*this, 2)
 	m_baseWorld->reserve(CHUNK_VOLUME);
 
 	//Generate some chunks
-	constexpr auto min = -3;
-	constexpr auto max = 3;
+	constexpr auto min = 0;
+	constexpr auto max = 1;
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -21,44 +21,11 @@ World::World()	:	m_mesh_manager(*this, 2)
 			{
 				const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
 				m_baseWorld->emplace(chunk_pos, chunk_pos);
-				
 			}
 		}
 	}
 
-	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
-	{
-		for(auto chunk_y = 0; chunk_y < max; ++chunk_y)
-		{
-			for(auto chunk_z = min; chunk_z < max; ++chunk_z)
-			{
-				const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
-				const auto generateChunk = jobSystem.createJob([this, chunk_pos](Job j)
-				{
-					auto& chunk = getChunkAt(chunk_pos);
-					for(auto z = 0; z < CHUNK_SIZE; z+=1)
-					{
-						for(auto y = 0; y < CHUNK_SIZE; y+=1)
-						{
-							for(auto x = 0; x < CHUNK_SIZE; x+=1)
-							{
-								const pos_xyz worldpos(chunk_pos.x * CHUNK_SIZE + x, 
-														chunk_pos.y * CHUNK_SIZE + y, 
-														chunk_pos.z * CHUNK_SIZE + z);
-
-								chunk.setBlockAt({x, y, z}, y % 2);
-							}
-						}
-					}
-					chunk.checkIfEmpty();
-
-					m_mesh_manager.cacheChunk(chunk);
-				});
-				jobSystem.schedule(generateChunk);
-			}
-		}
-	}
-	jobSystem.wait();
+	std::cout << "Added chunks to map\n";
 }
 
 World::~World()
@@ -123,7 +90,8 @@ Chunk& World::getChunkAt(const pos_xyz& chunk_coords_pos)
 
 		//Return the newly generated chunk
 		auto newChunk = m_baseWorld->emplace(chunk_coords_pos, chunk_coords_pos);
-		return newChunk.first->second;
+		return m_baseWorld->at(chunk_coords_pos);
+		// return newChunk.first->second;
 	}
 }
 

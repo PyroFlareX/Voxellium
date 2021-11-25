@@ -69,7 +69,10 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 		return false;
 	}
 
+	//createDrawInfoFromChunk is in ChunkMesher.h/cpp
 	auto drawInfo = std::make_shared<ChunkDrawInfo>(createDrawInfoFromChunk(chunk));
+	std::cout << "Created draw info\n";
+
 	//For the data length in the indices array
 	const u32 length = drawInfo->numIndices * sizeof(u32);
 	const auto baseOffset = findOpenSlot(length);
@@ -78,12 +81,14 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 	if(baseOffset < 0)
 	{
 		//COULD NOT FIND SPACE FOR CHUNK!!!
+		std::cout << "Could not find space in index array.\n";
 		return false;
 	}
 
 	if(!reserveSlot(baseOffset, length))
 	{
 		//COULD NOT ALLOCATE!!!
+		std::cout << "Could not reserve slot in index array.\n";
 		return false;
 	}
 	
@@ -144,7 +149,7 @@ const std::vector<Chunk::ChunkMesh>& ChunkMeshManager::getChunkDrawData() const
 
 void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 {
-	int indexOfChunk = 0;
+	int indexOfChunk = -1;
 	for(auto i = 0; i < m_activeChunks.size(); i+=1)
 	{
 		if(m_activeChunks[i] == chunk.getChunkPos())
