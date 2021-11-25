@@ -45,11 +45,11 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	//Chunks Instance Buffer
 	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), instance_buffer_name);
 
-	basicDescription.bufferType = storageType;
+	/*basicDescription.bufferType = storageType;
 	basicDescription.size = NUM_CHUNKS * NUM_FACES_IN_FULL_CHUNK * sizeof(u16); // 48 KB per chunk
 	basicDescription.stride = sizeof(u16);
 	//Chunks Texture Indexing Storage Buffer
-	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), texture_storage_buffer_name);
+	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), texture_storage_buffer_name);*/
 }
 
 ChunkMeshManager::~ChunkMeshManager()
@@ -180,39 +180,22 @@ void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 
 	//Add to face texture index buffer
 	auto face_texture_buffer = bs::asset_manager->getBuffer(texture_storage_buffer_name);
-	for(const auto& face : drawInfo->faces)
+
+
+	//Uncomment this when above is done
+	/*for(const auto& face : drawInfo->faces)
 	{
 		const u32 offset = instanceData.textureSlotOffset + face.faceIndex;
 		//This is technically safe to thread except for the mapping bc it is to different parts of the array
 		//This is also very sad and inefficient because only copying 2 bytes at a time
 		face_texture_buffer->writeBuffer(&face.textureID, sizeof(u16), offset);
-	}
+	}*/
 	
 	//Add the draw info to the chunk
 	{	
 		//Mutate the passed chunk
 		const_cast<Chunk*>(&chunk)->setMesh(drawInfo);
 	}
-
-	//UPDATE THE DESCRIPTOR SET FOR THE STORAGE BUFFER!!!
-	const VkDescriptorBufferInfo chunkTextureInfo
-	{
-		.buffer = face_texture_buffer->getAPIResource(),
-		.offset = instanceData.textureSlotOffset,
-		.range = NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
-	};
-
-	VkWriteDescriptorSet writeTextureIndexBuffer = {};
-	writeTextureIndexBuffer.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writeTextureIndexBuffer.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	writeTextureIndexBuffer.dstSet = *bs::asset_manager->pDescsetglobal;
-	writeTextureIndexBuffer.dstBinding = 2;
-	writeTextureIndexBuffer.dstArrayElement = 0; //Starting array element
-	writeTextureIndexBuffer.descriptorCount = 1; //Number to write over
-	writeTextureIndexBuffer.pBufferInfo = &chunkTextureInfo;
-
-	const bs::Device* p_device = bs::asset_manager->getTextureMutable(0).getDevice();
-	vkUpdateDescriptorSets(p_device->getDevice(), 1, &writeTextureIndexBuffer, 0, nullptr);
 }
 
 void ChunkMeshManager::condenseBuffer()

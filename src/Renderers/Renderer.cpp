@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <algorithm>
 
+#include "../World/Meshing/MeshingData.h"
+
 constexpr int numDescriptors = 3;
 
 Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: device(renderingDevice), m_renderpassdefault(genericPass)
@@ -251,7 +253,16 @@ void Renderer::pushGPUData(Camera& cam)
 	auto buf = bs::asset_manager->getBuffer("MVP");
 	bufferInfo1.buffer = buf->getAPIResource();
 	bufferInfo1.offset = 0;
-	bufferInfo1.range = 192;
+	bufferInfo1.range = buf->getSize();//192;
+
+
+	const auto textureStorageBuffer = bs::asset_manager->getBuffer("chunk_texture_data");
+	const VkDescriptorBufferInfo chunkTextureInfo
+	{
+		.buffer = textureStorageBuffer->getAPIResource(),
+		.offset = 0,//instanceData.textureSlotOffset,
+		.range = textureStorageBuffer->getSize(),//NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
+	};
 
 	const bs::Transform t;
 
@@ -302,7 +313,15 @@ void Renderer::pushGPUData(Camera& cam)
 	descWrite[1].descriptorCount = imageinfo.size();
 	descWrite[1].pImageInfo = imageinfo.data();
 
-	vkUpdateDescriptorSets(device->getDevice(), numDescriptors - 1, &descWrite[0], 0, nullptr);
+	descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descWrite[2].dstSet = m_descsetglobal;
+	descWrite[2].dstBinding = 2;
+	descWrite[2].dstArrayElement = 0; //Starting array element
+	descWrite[2].descriptorCount = 1; //Number to write over
+	descWrite[2].pBufferInfo = &chunkTextureInfo;
+
+	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
 }
 
 void Renderer::initDescriptorPool()
@@ -448,4 +467,37 @@ void Renderer::initDescriptorSetBuffers()
 	uniform.bufferData = &uniformbufferthing;
 
 	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(uniform), "MVP");
+
+
+	//CHUNK TEXTURE INDEX STORAGE BUFFERS
+	//@TODO: THIS IS A TEST! Remove this when actually adding the textures
+
+	const std::string texture_storage_buffer_name("chunk_texture_data");
+	constexpr auto storageType = bs::vk::BufferUsage::STORAGE_BUFFER;
+
+	auto NUM_CHUNKS = (2 * 2) * 4 * 16;
+	bs::vk::BufferDescription basicDescription
+	{
+		.dev = device,
+		.bufferType = storageType,
+		.size = NUM_CHUNKS * NUM_FACES_IN_FULL_CHUNK * sizeof(u16),	// 48 KB per chunk
+		.stride = sizeof(u16),
+	};
+
+	//Chunks Texture Indexing Storage Buffer
+	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), texture_storage_buffer_name);
+
+	auto face_texture_buffer = bs::asset_manager->getBuffer(texture_storage_buffer_name);
+
+	void* bufferptr = nullptr;
+	vmaMapMemory(device->getAllocator(), face_texture_buffer->getAllocation(), &bufferptr);
+
+	u16* buffer = (u16*)bufferptr;
+
+	for(auto varCount = 0; varCount < face_texture_buffer->getSize() / sizeof(u16); varCount += 1)
+	{
+		buffer[varCount] = 1;
+	}
+
+	vmaUnmapMemory(device->getAllocator(), face_texture_buffer->getAllocation());
 }
