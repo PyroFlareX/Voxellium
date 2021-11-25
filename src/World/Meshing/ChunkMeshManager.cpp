@@ -44,12 +44,6 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	basicDescription.size = NUM_CHUNKS * sizeof(ChunkInstanceData);
 	//Chunks Instance Buffer
 	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), instance_buffer_name);
-
-	/*basicDescription.bufferType = storageType;
-	basicDescription.size = NUM_CHUNKS * NUM_FACES_IN_FULL_CHUNK * sizeof(u16); // 48 KB per chunk
-	basicDescription.stride = sizeof(u16);
-	//Chunks Texture Indexing Storage Buffer
-	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), texture_storage_buffer_name);*/
 }
 
 ChunkMeshManager::~ChunkMeshManager()
@@ -71,7 +65,6 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 
 	//createDrawInfoFromChunk is in ChunkMesher.h/cpp
 	auto drawInfo = std::make_shared<ChunkDrawInfo>(createDrawInfoFromChunk(chunk));
-	std::cout << "Created draw info\n";
 
 	//For the data length in the indices array
 	const u32 length = drawInfo->numIndices * sizeof(u32);

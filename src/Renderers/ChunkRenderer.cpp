@@ -140,9 +140,11 @@ void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& dra
 	//Temp section, replace when doing multidraw indirect
 	for(const auto& chunk : drawInfos)
 	{
-		constexpr auto maxnumindices = 16 * 16 * 16 * 6 * 6;//147456
-		constexpr auto maxnumverts = 16 * 16 * 16 * 6 * 4;	//98304
-		constexpr auto minverts = 17 * 17 * 17; //4913
+		std::cout << "Chunk Draw Data:\n\t"
+			<< "Indices Count: " << chunk->numIndices << "\n\t"
+			<< "Faces Count: " << chunk->faces.size() << "\n\t"
+			<< "Instance ID: " << chunk->instanceID << "\n\t"
+			<< "Starting Byte Offset: " << chunk->startOffset << "\n";
 		
 		//From byte offset divided by stride to index offset
 		u32 baseIndex = chunk->startOffset / sizeof(u32);

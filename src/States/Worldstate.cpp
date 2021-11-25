@@ -51,8 +51,7 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 			}
 		}
 	}
-
-	std::cout << "Jobs Scheduled: " << jobsScheduled << "\n";
+	
 	while(jobSystem.backgroundJobs() > currentJobs)	{	}
 }
 

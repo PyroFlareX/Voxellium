@@ -15,12 +15,6 @@ layout (location = 0) out vec4 FragColor;
 
 layout (location = 0) in vertexOutputData vertexData;
 
-layout (set = 0, binding = 0) uniform MVP
-{
-	mat4 proj;
-	mat4 view;
-} CameraData;
-
 layout (set = 0, binding = 1) uniform sampler2D textures[];
 
 void main()

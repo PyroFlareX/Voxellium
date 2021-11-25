@@ -64,7 +64,7 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 		{
 			const ImDrawList* cmd_list = drawData->CmdLists[i];
 			
-			for (int j = 0; j < cmd_list->CmdBuffer.Size; ++j)
+			for(int j = 0; j < cmd_list->CmdBuffer.Size; ++j)
 			{
 				const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
 
@@ -104,7 +104,6 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 	{
 		throw std::runtime_error("failed to record command buffer!");
 	}
-
 }
 
 void UIRenderer::bakeImGui()

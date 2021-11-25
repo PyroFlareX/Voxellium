@@ -10,8 +10,8 @@ World::World()	:	m_mesh_manager(*this, 2)
 	m_baseWorld->reserve(CHUNK_VOLUME);
 
 	//Generate some chunks
-	constexpr auto min = 0;
-	constexpr auto max = 1;
+	constexpr auto min = -4;
+	constexpr auto max = 4;
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -24,8 +24,6 @@ World::World()	:	m_mesh_manager(*this, 2)
 			}
 		}
 	}
-
-	std::cout << "Added chunks to map\n";
 }
 
 World::~World()
