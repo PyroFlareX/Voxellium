@@ -12,6 +12,8 @@ public:
 	void addInstance(const bs::GameObject& entity);
 	void render(Camera& cam);
 
+	void executeCommands(VkCommandBuffer cmd);
+
 	void clearQueue();
 
 	std::vector<VkCommandBuffer> getRenderlists();

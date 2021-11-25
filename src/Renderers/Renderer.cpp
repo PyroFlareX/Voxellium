@@ -221,11 +221,10 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 		**/
 		
 		//Execute all the cmd buffers for the general renderer and UI
-		vkCmdExecuteCommands(cmd, renderLists.size(), renderLists.data());
-		
+		m_generalRenderer->executeCommands(cmd);
 
 		//Chunk Renderer
-		vkCmdExecuteCommands(cmd, 1, m_chunkRenderer->getRenderCommand());
+		m_chunkRenderer->executeCommands(cmd);
 		//OTHERS
 		// ...
 

@@ -13,7 +13,7 @@ public:
 
 	void buildRenderCommands(const std::vector<Chunk::ChunkMesh>& drawInfos);
 
-	const VkCommandBuffer* getRenderCommand() const;
+	void executeCommands(VkCommandBuffer cmd);
 	
 private:
 	void clearCommandBuffer();
@@ -36,4 +36,6 @@ private:
 	VkCommandPool m_pool;
 	std::vector<VkCommandBuffer> m_renderlist;
 	bs::Device* p_device;
+
+	bool recorded;
 };

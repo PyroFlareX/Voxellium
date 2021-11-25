@@ -9,7 +9,7 @@ constexpr u32 VERTEX_INPUT_BINDING = 0;
 constexpr u32 INSTANCE_INPUT_BINDING = 1;
 
 ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	: 
-	p_device(mainDevice), m_renderpass(rpass)
+	p_device(mainDevice), m_renderpass(rpass), recorded(false)
 {
 	bs::vk::createCommandPool(*p_device, m_pool);
 
@@ -157,16 +157,22 @@ void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& dra
 	}
 
 	vkEndCommandBuffer(cmd);
+
+	recorded = true;
 }
 
-const VkCommandBuffer* ChunkRenderer::getRenderCommand() const
+void ChunkRenderer::executeCommands(VkCommandBuffer cmd)
 {
-	return &m_renderlist[0];
+	if(recorded)
+	{
+		vkCmdExecuteCommands(cmd, 1, m_renderlist.data());
+	}
 }
 
 void ChunkRenderer::clearCommandBuffer()
 {
 	vkResetCommandPool(p_device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+	recorded = false;
 }
 
 void ChunkRenderer::generateChunkData()
