@@ -125,6 +125,11 @@ namespace bs::vk
 		return m_buffer;
 	}
 
+	VmaAllocation& Buffer::getAllocation()
+	{
+		return m_allocation;
+	}
+
 	void Buffer::deleteBuffer()
 	{
 		vmaDestroyBuffer(m_desc.dev->getAllocator(), m_buffer, m_allocation);

@@ -60,6 +60,7 @@ namespace bs::vk
 		void setAPIResource(VkBuffer& buffer);
 		//Get buffer handle
 		VkBuffer& getAPIResource();
+		VmaAllocation& getAllocation();
 
 		//Deallocate buffer
 		void deleteBuffer();
