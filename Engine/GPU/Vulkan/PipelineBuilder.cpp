@@ -99,7 +99,7 @@ namespace bs::vk
 			std::cout << "Push Constant Size is not valid! Max is " << MAX_PUSH_CONSTANT_SIZE_BYTES << " while "
 				<< sizeofStructInBytes << " was passed!\n";
 		}
-		assert(pushConstantSize <= MAX_PUSH_CONSTANT_SIZE_BYTES);
+		assert(pushConstantStructSize <= MAX_PUSH_CONSTANT_SIZE_BYTES);
 	}
 	
 	void GraphicsPipelineBuilder::setRasterizingData(const bool drawClockwise, const bool cullBack)
