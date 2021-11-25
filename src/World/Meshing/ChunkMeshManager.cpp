@@ -247,7 +247,7 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 	if(shouldThreadIndexBuilding)
 	{
 		mesh.meshindicies.resize(drawInfo.numIndices);
-		const auto curJobs = jobSystem.backgroundJobs();
+		const auto curJobs = jobSystem.remainingJobs();
 		const u32 numWorkers = drawInfo.faces.size() / facesWorkPerThread;
 
 		for(u32 executionID = 0; executionID < numWorkers; executionID += 1)
@@ -279,7 +279,7 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 			memcpy(&(mesh.meshindicies[meshIndex]), indexArray.data(), indexArray.size() * sizeof(indexArray[0]));
 		}
 
-		jobSystem.wait(curJobs - numWorkers);
+		jobSystem.wait(curJobs);
 	}
 	else
 	{
