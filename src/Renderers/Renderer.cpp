@@ -90,9 +90,8 @@ Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: devi
 	m_generalRenderer = std::make_unique<GeneralRenderer>(device, m_renderpassdefault, desclayout);
 	//Create the chunk renderer
 	m_chunkRenderer = std::make_unique<ChunkRenderer>(device, m_renderpassdefault, desclayout);
-	//Create UI Renderer Pipeline And the Renderer
-	bs::vk::createUIPipeline(*device, imguipipeline, m_renderpassdefault, guilayout, desclayout);
-	m_UIRenderer = std::make_unique<UIRenderer>(device, imguipipeline, guilayout);
+	//Create the UI Renderer
+	m_UIRenderer = std::make_unique<UIRenderer>(device, m_renderpassdefault, desclayout);
 }
 
 Renderer::~Renderer()

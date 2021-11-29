@@ -2,14 +2,62 @@
 
 #include "UIRenderer.h"
 
-#include <Engine.h>
-#include <algorithm>
+#include <GPU/Vulkan/PipelineBuilder.h>
 
-UIRenderer::UIRenderer(bs::Device* device, VkPipeline pipeline, VkPipelineLayout piplineLayout)
+#include <Engine.h>
+
+UIRenderer::UIRenderer(bs::Device* device, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	:	
+	m_renderpass(rpass), p_device(device)
 {
-	p_device = device;
-	gfx = pipeline;
-	playout = piplineLayout;
+	const VkCommandBufferAllocateInfo allocInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.commandPool = m_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+		.commandBufferCount = (u32)m_renderlist.size(),
+	};
+
+	/*if(vkAllocateCommandBuffers(p_device->getDevice(), &allocInfo, m_renderlist.data()) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("Failed to allocate command buffers!");
+	}*/
+
+	//Cmd buffer Inheritance info init
+	m_inheritanceInfo = VkCommandBufferInheritanceInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext = nullptr,
+		.renderPass = m_renderpass,
+		.subpass = 0,
+		// Set to Null because the finish render function has the target frame buffer to render to
+		.framebuffer = VK_NULL_HANDLE,
+		.occlusionQueryEnable = 0,
+		.queryFlags = 0,
+		.pipelineStatistics = 0
+	};
+
+	//Cmd buffer starting info
+	m_beginInfo = VkCommandBufferBeginInfo 
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext = nullptr,
+		.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+		.pInheritanceInfo = &m_inheritanceInfo,
+	};
+	
+	/*bs::vk::GraphicsPipelineBuilder graphicsPipelineBuilder(p_device, m_renderpass, desclayout);
+	graphicsPipelineBuilder.addVertexShader("res/Shaders/uivert.spv");
+	graphicsPipelineBuilder.addFragmentShader("res/Shaders/uifrag.spv");
+	graphicsPipelineBuilder.setDrawMode(bs::vk::DrawMode::FILL);
+	graphicsPipelineBuilder.setRasterizingData(false, true);
+	graphicsPipelineBuilder.setPushConstantSize(sizeof(PushConstantsIMGUI));
+	graphicsPipelineBuilder.useVertexDescription(bs::vk::getVertexDescriptionImGUI());
+
+	graphicsPipelineBuilder.build();
+	graphicsPipelineBuilder.getResults(m_genericPipeline, m_pipelineLayout);*/
+
+	bs::vk::createUIPipeline(*p_device, m_gui_pipeline, m_renderpass, m_gui_layout, desclayout);
 }
 
 void UIRenderer::addText(const std::string& text, bs::vec2i screenSpacePosition)
@@ -20,19 +68,11 @@ void UIRenderer::addText(const std::string& text, bs::vec2i screenSpacePosition)
 void UIRenderer::render()
 {	
 	drawText();
-	
 }
 
 void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 {
-	auto& cmd = guiBuffer;
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, gfx);
-
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, bs::asset_manager->pDescsetglobal, 0, nullptr);
-
-	// UI scale and translate via push constants
-	auto& io = ImGui::GetIO();
-
+	const auto& io = ImGui::GetIO();
 	const VkViewport vport
 	{
 		.x = 0.0f,
@@ -43,12 +83,19 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 		.maxDepth = 1.0f
 	};
 
+	auto& cmd = guiBuffer;
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_gui_pipeline);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_gui_layout, 0, 1, bs::asset_manager->pDescsetglobal, 0, nullptr);
+
+	// UI scale and translate via push constants
 	vkCmdSetViewport(cmd, 0, 1, &vport);
 
-	PushConstantsIMGUI pushconstantblock = {};
-	pushconstantblock.scale = bs::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-	pushconstantblock.translate = bs::vec2(-1.0f);
-	pushconstantblock.textureID = bs::vec4(0.0f);
+	PushConstantsIMGUI pushconstantblock
+	{
+		.scale = bs::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y),
+		.translate = bs::vec2(-1.0f),
+		.textureID = bs::vec4(0.0f),
+	};
 
 	const auto* drawData = ImGui::GetDrawData();
 	int vertexOffset = 0;
@@ -90,7 +137,7 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 					pushconstantblock.textureID.x = static_cast<float>(reinterpret_cast<u64>(t_id));
 				}
 
-				vkCmdPushConstants(cmd, playout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantsIMGUI), &pushconstantblock);
+				vkCmdPushConstants(cmd, m_gui_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantsIMGUI), &pushconstantblock);
 						
 				vkCmdDrawIndexed(cmd, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
 				indexOffset += pcmd->ElemCount;
@@ -100,9 +147,10 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 			vertexOffset += cmd_list->VtxBuffer.Size;
 		}
 	}
-	if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+
+	if(vkEndCommandBuffer(cmd) != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to record command buffer!");
+		throw std::runtime_error("Failed to record command buffer!");
 	}
 }
 

@@ -787,11 +787,11 @@ namespace bs::vk
 	void createUIPipeline(bs::Device& device, VkPipeline& pipeline, VkRenderPass& rpass, VkPipelineLayout& playout, VkDescriptorSetLayout& dlayout)
 	{
 		//Shader Config
-		auto vertShaderCode = uivert; //bs::readFile("res/Shaders/uivert.spv");
-		auto fragShaderCode = uifrag; //bs::readFile("res/Shaders/uifrag.spv");
+		const auto vertShaderCode = bs::readFile("res/Shaders/uivert.spv");	//uivert;
+		const auto fragShaderCode = bs::readFile("res/Shaders/uifrag.spv");	//uifrag;
 
-		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode, device.getDevice());
-		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode, device.getDevice());
+		const VkShaderModule vertShaderModule = createShaderModule(vertShaderCode, device.getDevice());
+		const VkShaderModule fragShaderModule = createShaderModule(fragShaderCode, device.getDevice());
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -810,7 +810,7 @@ namespace bs::vk
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 
 		//Vertex Config
-		auto vdesc = getVertexDescriptionImGUI();
+		const auto vdesc = getVertexDescriptionImGUI();
 
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.vertexBindingDescriptionCount = static_cast<int>(vdesc.bindings.size());
