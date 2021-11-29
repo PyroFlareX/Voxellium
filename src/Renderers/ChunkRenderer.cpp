@@ -68,11 +68,6 @@ ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDesc
 
 	//Make the chunk vertex mesh
 	generateChunkData();
-
-	//Build a demo cmd buffer so validation layers don't complain about it being empty
-	auto& cmd = m_renderlist[0];
-	vkBeginCommandBuffer(cmd, &m_beginInfo);
-	vkEndCommandBuffer(cmd);
 }
 
 ChunkRenderer::~ChunkRenderer()
@@ -88,7 +83,7 @@ void ChunkRenderer::buildRenderCommands()
 {
 	if(recorded)
 	{
-		return;
+	//	return;
 	}
 
 	if(p_mesh_manager == nullptr)
@@ -124,6 +119,7 @@ void ChunkRenderer::buildRenderCommands()
 
 	//Command Buffer for recording
 	auto& cmd = m_renderlist[0];
+	clearCommandBuffer();
 
 	//Begin the RECORDING!!!
 	vkBeginCommandBuffer(cmd, &m_beginInfo);
@@ -158,15 +154,15 @@ void ChunkRenderer::buildRenderCommands()
 	const auto chunks_to_draw = p_mesh_manager->getChunkDrawData();
 	for(const auto& chunk : chunks_to_draw)
 	{
-		std::cout << "Chunk Draw Data:\n\t"
+		/*std::cout << "Chunk Draw Data:\n\t"
 			<< "Indices Count: " << chunk->numIndices << "\n\t"
 			<< "Faces Count: " << chunk->faces.size() << "\n\t"
 			<< "Instance ID: " << chunk->instanceID << "\n\t"
-			<< "Starting Byte Offset: " << chunk->startOffset << "\n";
+			<< "Starting Byte Offset: " << chunk->startOffset << "\n";*/
 			
 		//From byte offset divided by stride to index offset
-		u32 baseIndex = chunk->startOffset / sizeof(u32);
-		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, 0, 0, chunk->instanceID);
+		const u32 baseIndex = chunk->startOffset / sizeof(u32);
+		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, baseIndex, 0, chunk->instanceID);
 	}
 
 	vkEndCommandBuffer(cmd);

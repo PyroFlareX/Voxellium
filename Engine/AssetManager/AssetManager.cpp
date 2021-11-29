@@ -18,7 +18,7 @@ namespace bs
 
 		for(auto& [ID, buffer] : m_buffers.getMap())
 		{
-			std::cout << "Buffer Destroyed: " << ID << "\n";
+			// std::cout << "Buffer Destroyed: " << ID << "\n";
 			buffer.reset();
 		}
 	}
@@ -41,7 +41,7 @@ namespace bs
 	void AssetManager::addBuffer(std::shared_ptr<bs::vk::Buffer> buffer, const std::string& id) noexcept
 	{
 		m_buffers.addAsset(buffer, id);
-		std::cout << "Buffer Added: " << id << "\n";
+		// std::cout << "Buffer Added: " << id << "\n";
 	}
 
 	void AssetManager::addImg(bs::Image& img, const std::string& id) noexcept

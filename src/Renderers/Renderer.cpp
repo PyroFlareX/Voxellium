@@ -187,9 +187,7 @@ void Renderer::render(Camera& cam)
 }
 
 void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
-{
-	vkResetCommandPool(device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-	
+{	
 	//Clear values for renderpass
 	const VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 	VkClearValue clearDepth = { };
@@ -280,6 +278,8 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 void Renderer::clearQueue()
 {
 	m_generalRenderer->clearQueue();
+	m_chunkRenderer->clearCommandBuffer();
+	vkResetCommandPool(device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 }
 
 void Renderer::pushGPUData(Camera& cam)
