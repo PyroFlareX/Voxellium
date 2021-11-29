@@ -99,6 +99,11 @@ void UIRenderer::render()
 	vkResetCommandPool(p_device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 	auto& cmd = m_renderlist.at(0);
 
+	if(vkBeginCommandBuffer(cmd, &m_beginInfo) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to begin recording command buffer!");
+	}
+
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_gui_pipeline);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_gui_layout, 0, 1, bs::asset_manager->pDescsetglobal, 0, nullptr);
 

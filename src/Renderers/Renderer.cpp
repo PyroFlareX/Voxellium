@@ -183,10 +183,6 @@ void Renderer::render(Camera& cam)
 void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 {
 	vkResetCommandPool(device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-	//Second Pass
-	auto renderLists = m_generalRenderer->getRenderlists(); // The secondary command buffers
-
-	
 	
 	//Clear values for renderpass
 	const VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
@@ -421,7 +417,7 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 	{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
 		.pNext = nullptr,
-		.bindingCount = (u32)flags.size(),
+		.bindingCount = numDescriptors,
 		.pBindingFlags = flags.data(),
 	};
 
@@ -429,7 +425,7 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 	const VkDescriptorSetLayoutCreateInfo descLayoutInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.pNext = &layoutBindingFlags,
+		.pNext = nullptr, //&layoutBindingFlags,
 		.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
 		.bindingCount = numDescriptors,
 		.pBindings = &setLayoutBinding[0],
