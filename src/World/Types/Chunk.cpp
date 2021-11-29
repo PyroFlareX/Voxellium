@@ -1,5 +1,7 @@
 #include "Chunk.h"
 
+#include "../Meshing/ChunkMesher.h"
+
 constexpr static inline bool isValid(const pos_xyz& pos) noexcept
 {
 	return !((pos.x < 0) || (pos.x > 15) || (pos.y < 0) || (pos.y > 15) || (pos.z < 0) || (pos.z > 15));
@@ -84,7 +86,8 @@ void Chunk::setRemeshingFlag()
 
 void Chunk::setMesh(const ChunkMesh managed_mesh)
 {
-	m_mesh_handle = managed_mesh;
+	std::weak_ptr<ChunkDrawInfo> mesh_handle(managed_mesh);
+	m_mesh_handle.swap(mesh_handle);
 }
 
 bool Chunk::hasMesh() const
@@ -94,5 +97,22 @@ bool Chunk::hasMesh() const
 	
 Chunk::ChunkMesh Chunk::getChunkMesh() const
 {
-	return m_mesh_handle.lock();
+	if(hasMesh())
+	{
+		return m_mesh_handle.lock();
+	}
+	else
+	{
+		return std::make_shared<ChunkDrawInfo>();
+		/*ChunkDrawInfo c_info;
+		c_info.chunk_pos = chunk.getChunkPos();
+
+		//THIS IS EXPENSIVE!!!
+		c_info.faces = generateFacesForChunk(m_world, chunk);
+		c_info.numIndices = c_info.faces.size() * 6;
+		c_info.startOffset = 0;
+
+		m_mesh_handle = mesh;
+		return mesh;*/
+	}
 }

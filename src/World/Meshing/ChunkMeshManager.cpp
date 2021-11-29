@@ -177,6 +177,37 @@ void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 	auto face_texture_buffer = bs::asset_manager->getBuffer(texture_storage_buffer_name);
 
 
+	//@TODO: Fix the manager accessing to have the following capabilities:
+	/**
+	 * Caching must be able to be done from any arbitrary caller simultaneously, sync internally
+	 * (To do this, possibly use state mutexes or something, like lock-unlock immedately
+	 *  upon calling to cache a chunk, and actually lock when calling, say, the GC condenser)
+	 * ^ This allows EXCLUSIVE access to the manager from just that thread, so other mutations don't screw it up
+	 * 
+	 * The GC will be called if there is a decent amount of micro allocations unused (probably lock to be only one caller at a time)
+	 * 
+	 * Possibly use an MPMC or MPSC queue to distribute local work for the chunk building/lifetime managing
+	 * 
+	 * Have the setRenderDistance reconfigure the sizes and setup of this so that it allocates enough room for all the chunks
+	 * 	within that radius/distance [excluding index buffer]
+	 * 
+	 * Create a size allocator for the index buffer
+	 * 
+	 * Make sure the chunk DOES NOT get modified whatsoever by this.
+	 * 	This means ABSOLUTELY NOTHING. Stop caching the ptr in the chunk, even though its convenient
+	 * It just makes some other things harder
+	 * 
+	 * Have a job that checks the active chunks if any mesh updates need to occur, MUTATE THE CHUNK STATE
+	 * 	(atomically maybe?) and assign the remeshing to another job
+	 * 	[This should be done on another ChunkMeshInfo, and swap the pointers when it is done]
+	 * 		> This allows for the chunk to continue being rendered to squeeze every last FPS
+	 * 			that can be achieved before biting the time to copy to the buffer & swap
+	 * 		Possible optimizations:
+	 * 			1. Compare the previous face count to the new one, if equal or less, keep the existing region
+	 * 			2. Do it asyncronously on another job and chunk info, swap after completion !!! <= REQUIREMENT
+	 * 
+	**/
+
 	//Uncomment this when above is done
 	/*for(const auto& face : drawInfo->faces)
 	{
@@ -198,6 +229,8 @@ void ChunkMeshManager::condenseBuffer()
 	//Shift the contents of the buffer around to maximize space
 	//Also FORCE drop all of the droppable chunks
 	//And reallocate the buffer if needed too
+
+	//@TODO: Implement this
 }
 
 ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) const
