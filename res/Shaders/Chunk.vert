@@ -41,7 +41,7 @@ const int NUM_SIDES = 6;
 const int NUM_FACES_IN_CHUNK = CHUNK_VOLUME * NUM_SIDES;
 layout ( set = 0, binding = 1, std430 ) readonly buffer TextureLayoutData
 {
-	uint16_t faceTexture[NUM_FACES_IN_CHUNK];
+	int /*uint16_t*/ faceTexture[NUM_FACES_IN_CHUNK];
 } faceTextures[];
 
 //FUNCTIONS FOR THE SHADER
@@ -88,13 +88,10 @@ vec2 getTextureCoordinates(int corner)
 	{	//TR
 		return vec2(1.0f, 1.0f);
 	}
-	else if(corner == 4) 
+	else// if(corner == 4) 
 	{	//TL
 		return vec2(0.0f, 1.0f);
-	}
-
-	//THIS SHOULDN'T HAPPEN UUHHHH
-	return vec2(0, 0);	
+	}	
 }
 
 //Get which block this is from the packed data
@@ -119,11 +116,11 @@ void main()
 
 	//Calculate via offsets the textureID for this face
 	int	faceID = getFaceIndex(directionCornerInfo);
-	int textureID = int(faceTextures[textureBufferOffset].faceTexture[faceID]);
+	int textureID = int(faceTextures[0/*textureBufferOffset*/].faceTexture[faceID]);
 	vertexData.textureIDFiller.x = float(textureID);
 
 	//Calculate vertex positions
-	const vec3 vertexPos = packedData.xyz + chunkPos.xyz;
+	const vec3 vertexPos = packedData.xyz + (16.0 * chunkPos.xyz);
 	vertexData.fragPos = vertexPos;
 	gl_Position = CameraData.proj * CameraData.view * vec4(vertexPos, 1.0);
 	
