@@ -13,6 +13,18 @@ const std::string texture_storage_buffer_name("chunk_texture_data");
 ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)	:	m_world(world), m_renderDistance(renderDistance),
 		m_open_spans({}), m_chunk_draw_data({}), m_activeChunks({}), m_droppableChunks({})
 {
+	/**
+	 * Stuff that should happen:
+	 * 
+	 * Calculate the number of chunk space to allocate from the render distance
+	 * 
+	 * Initialize the chunk instance buffer & size
+	 * Resize the face storage buffer for number of chunks
+	 * 
+	 * Initialize the span for the index buffer data allocator
+	 * 
+	*/
+
 	//Indices count
 	constexpr auto worstCaseIndicesPerChunk = NUM_FACES_IN_FULL_CHUNK * 6; //147456 B
 

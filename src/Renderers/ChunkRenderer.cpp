@@ -170,18 +170,18 @@ void ChunkRenderer::buildRenderCommands()
 	recorded = true;
 }
 
+void ChunkRenderer::clearCommandBuffer()
+{
+	vkResetCommandPool(p_device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+	recorded = false;
+}
+
 void ChunkRenderer::executeCommands(VkCommandBuffer cmd)
 {
 	if(recorded)
 	{
 		vkCmdExecuteCommands(cmd, 1, m_renderlist.data());
 	}
-}
-
-void ChunkRenderer::clearCommandBuffer()
-{
-	vkResetCommandPool(p_device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
-	recorded = false;
 }
 
 void ChunkRenderer::generateChunkData()
@@ -224,10 +224,9 @@ void ChunkRenderer::generateChunkData()
 			.offset = 0,
 			.size = transferBuffer.getSize(),
 		};
-
-		//barrier the buffer into the transfer-receive?
+		//Barrier the buffer into the transfer-receive?
 		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &bufferTransferBarrier, 0, nullptr);
-
+		
 		//COPY CMD
 		const VkBufferCopy buffercpy
 		{
@@ -241,14 +240,12 @@ void ChunkRenderer::generateChunkData()
 		VkBufferMemoryBarrier cpyFinishBarrier = bufferTransferBarrier;
 		cpyFinishBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		cpyFinishBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		//barrier the buffer into the shader readable layout? Tbh I just cpied the image stuff and it seems to work fine /shrug
+		//Barrier the buffer into the shader readable layout? Tbh I just cpied the image stuff and it seems to work fine /shrug
 		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &cpyFinishBarrier, 0, nullptr);
 	});
 
 	VmaAllocationInfo allocationInfo;
 	vmaGetAllocationInfo(p_device->getAllocator(), m_chunkbuffer->getAllocation(), &allocationInfo);
-
 	std::cout << "Base Chunk Mesh Data:\n\t"
 		<< "Num Vertices: " << chunkVerts.size() << "\n\t"
 		<< "Size in Bytes: " << chunkVerts.size() * sizeof(bs::vec4) << "\n\t"
