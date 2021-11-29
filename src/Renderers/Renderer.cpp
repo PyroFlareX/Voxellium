@@ -370,28 +370,30 @@ void Renderer::initCommandPoolAndBuffers()
 
 void Renderer::initDescriptorPool(const std::vector<DescriptorSetInfo>& sets)
 {
-	//Descriptor pool stuff
-	VkDescriptorPoolCreateInfo descpoolinfo{};
-
-	descpoolinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	descpoolinfo.pNext = nullptr;
-	descpoolinfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
-
+	//Some layouts stuff
 	VkDescriptorPoolSize descpoolsize[numDescriptors] = {};
-	descpoolsize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;	//For the (M?) VP matrix
-	descpoolsize[0].descriptorCount = 1;
 
-	descpoolsize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descpoolsize[1].descriptorCount = bs::asset_manager->getNumTextures();
+	for(const auto& descriptor : sets)
+	{
+		const u32 bindingSlot = descriptor.bindingSlot;
 
-	descpoolsize[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	descpoolsize[2].descriptorCount = 1;
+		descpoolsize[bindingSlot].type = descriptor.type;
+		descpoolsize[bindingSlot].descriptorCount = descriptor.count;
+	}
 
-	descpoolinfo.pPoolSizes = &descpoolsize[0];
-	descpoolinfo.poolSizeCount = numDescriptors;
-	descpoolinfo.maxSets = 100;
+	//Descriptor pool stuff
+	const VkDescriptorPoolCreateInfo desc_pool_info
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
+		.maxSets = 100,
 
-	VkResult result = vkCreateDescriptorPool(device->getDevice(), &descpoolinfo, nullptr, &m_descpool);
+		.poolSizeCount = numDescriptors,
+		.pPoolSizes = &descpoolsize[0],
+	};
+
+	VkResult result = vkCreateDescriptorPool(device->getDevice(), &desc_pool_info, nullptr, &m_descpool);
 	if(result != VK_SUCCESS)
 	{
 		std::cerr << "Creating Descriptor Pool Failed, result = " << result << "\n";
