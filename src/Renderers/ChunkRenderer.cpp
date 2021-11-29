@@ -190,19 +190,66 @@ void ChunkRenderer::generateChunkData()
 
 	std::cout << "Base Chunk Mesh Data:\n\t"
 		<< "Num Vertices: " << chunkVerts.size() << "\n\t"
-		<< "Size in Bytes: " << chunkVerts.size() * sizeof(bs::vec4) << "\n\t"
-		<< "TBD: " << " " << "\n";
+		<< "Size in Bytes: " << chunkVerts.size() * sizeof(bs::vec4) << "\n";
 
-	const bs::vk::BufferDescription chunkdata
+	const bs::vk::BufferDescription stagingDescription
 	{
 		.dev = p_device,
-		.bufferType = bs::vk::BufferUsage::VERTEX_BUFFER,
+		.bufferType = bs::vk::BufferUsage::TRANSFER_BUFFER,
 		.size = chunkVerts.size() * sizeof(bs::vec4),
 		.stride = sizeof(bs::vec4),
 		.bufferData = chunkVerts.data(),
+		.usage = VMA_MEMORY_USAGE_CPU_ONLY,
 	};
 
+	bs::vk::Buffer transferBuffer(stagingDescription);
+
+	bs::vk::BufferDescription chunkdata = stagingDescription;
+	chunkdata.bufferType = static_cast<bs::vk::BufferUsage>((u32)bs::vk::BufferUsage::VERTEX_BUFFER | (u32)bs::vk::BufferUsage::TRANSFER_BUFFER);
+	chunkdata.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
 	m_chunkbuffer = std::make_unique<bs::vk::Buffer>(chunkdata);
+
+	//Staging the upload of the buffer to the GPU only memory for FASTER access
+	p_device->submitImmediate([&](VkCommandBuffer cmd) 
+	{
+		const VkBufferMemoryBarrier bufferTransferBarrier
+		{
+			.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			.pNext = nullptr,
+			
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+			
+			.srcQueueFamilyIndex = 0,
+			.dstQueueFamilyIndex = 0,
+
+			.buffer = transferBuffer.getAPIResource(),
+			.offset = 0,
+			.size = transferBuffer.getSize(),
+		};
+
+		//barrier the buffer into the transfer-receive?
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &bufferTransferBarrier, 0, nullptr);
+
+		//COPY CMD
+		const VkBufferCopy buffercpy
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = transferBuffer.getSize(),
+		};
+
+		vkCmdCopyBuffer(cmd, transferBuffer.getAPIResource(), m_chunkbuffer->getAPIResource(), 1, &buffercpy);
+
+		VkBufferMemoryBarrier cpyFinishBarrier = bufferTransferBarrier;
+		cpyFinishBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		cpyFinishBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		//barrier the buffer into the shader readable layout? Tbh I just cpied the image stuff and it seems to work fine /shrug
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &cpyFinishBarrier, 0, nullptr);
+	});
+
 }
 
 VertexInputDescription ChunkRenderer::getChunkInputDescription()
