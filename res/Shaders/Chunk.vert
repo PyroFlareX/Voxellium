@@ -116,7 +116,7 @@ void main()
 
 	//Calculate via offsets the textureID for this face
 	int	faceID = getFaceIndex(directionCornerInfo);
-	int textureID = int(faceTextures[textureBufferOffset].faceTexture[faceID]);
+	int textureID = 1; //int(faceTextures[textureBufferOffset].faceTexture[faceID]);
 	vertexData.textureIDFiller.x = float(textureID);
 
 	//Calculate vertex positions
