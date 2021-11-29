@@ -296,7 +296,7 @@ void Renderer::pushGPUData(Camera& cam)
 	std::vector<VkDescriptorImageInfo> imageinfo;
 	imageinfo.reserve(textures.size());
 
-	for(int i = 0; i < textures.size(); ++i)
+	for(auto i = 0; i < textures.size(); ++i)
 	{
 		VkDescriptorImageInfo imginfo;
 		imginfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -337,7 +337,7 @@ void Renderer::initCommandPoolAndBuffers()
 	if(result != VK_SUCCESS) 
 	{
 		std::cerr << "Failed to allocate command buffers, error code: " << result << "\n";
-		throw std::runtime_error("failed to allocate command buffers!");
+		throw std::runtime_error("Failed to allocate command buffers!");
 	}
 }
 
@@ -390,26 +390,23 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 		setLayoutBinding[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		setLayoutBinding[i].binding = i;
 		setLayoutBinding[i].descriptorCount = 1;
-
 		setLayoutBinding[i].stageFlags = VK_SHADER_STAGE_ALL;
 		setLayoutBinding[i].pImmutableSamplers = nullptr;
 	}
-
+	//Add the sets into it
 	for(const auto& descriptor : sets)
 	{
 		const u32 bindingSlot = descriptor.bindingSlot;
-
 		setLayoutBinding[bindingSlot].descriptorType = descriptor.type;
 		setLayoutBinding[bindingSlot].binding = bindingSlot;
 		setLayoutBinding[bindingSlot].descriptorCount = descriptor.count;
-
 		setLayoutBinding[bindingSlot].stageFlags = VK_SHADER_STAGE_ALL;
 		setLayoutBinding[bindingSlot].pImmutableSamplers = nullptr;
 	}
 
 	//For texture indexing:
 	std::vector<VkDescriptorBindingFlags> flags(numDescriptors, 0);
-	flags.at(flags.size() - 1) = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+	flags.at(7) = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 	
 	const VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags
 	{
@@ -450,7 +447,7 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 	const VkDescriptorSetAllocateInfo descriptorAllocInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.pNext = &variableDescAlloc,
+		.pNext = nullptr, //&variableDescAlloc,
 		.descriptorPool = m_descpool,
 		.descriptorSetCount = 1,
 		.pSetLayouts = &desclayout,
@@ -526,44 +523,42 @@ void Renderer::initDescriptorSetBuffers(const std::vector<DescriptorSetInfo>& se
 	//NOW Update the descriptor sets
 	VkWriteDescriptorSet basicWrite;
 	basicWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	basicWrite.pNext = nullptr;
+	basicWrite.pBufferInfo = nullptr;
+	basicWrite.pImageInfo = nullptr;
+	basicWrite.pTexelBufferView = nullptr;
 	basicWrite.dstSet = m_descsetglobal;
 	basicWrite.dstArrayElement = 0; //Starting array element
 	basicWrite.descriptorCount = 1; //Number to write over
 
-	//Buffer Writing Info
-	const std::vector<VkDescriptorBufferInfo> descriptorBufferInfo({
-		VkDescriptorBufferInfo 
-		{	//MVP
-			.buffer = mvp_buffer->getAPIResource(),
-			.offset = 0,
-			.range = mvp_buffer->getSize(), // 192
-		},
-		VkDescriptorBufferInfo 
-		{	//Chunk Texture Info
-			.buffer = face_texture_buffer->getAPIResource(),
-			.offset = 0,
-			.range = face_texture_buffer->getSize(), // NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
-		}
-	});
+	const VkDescriptorBufferInfo MVPBufferWrite
+	{	//MVP
+		.buffer = mvp_buffer->getAPIResource(),
+		.offset = 0,
+		.range = mvp_buffer->getSize(), // 192
+	};
 
-	std::vector<VkWriteDescriptorSet> descriptorWrites;
-	u32 descriptorNum = 0;
-	for(const auto& descriptor : sets)
-	{
-		VkWriteDescriptorSet set_write = basicWrite;
-		set_write.descriptorType = descriptor.type;
-		set_write.dstBinding = descriptor.bindingSlot;
-		set_write.descriptorCount = descriptor.count;
+	const VkDescriptorBufferInfo textureBufferWrite
+	{	//Chunk Texture Info
+		.buffer = face_texture_buffer->getAPIResource(),
+		.offset = 0,
+		.range = face_texture_buffer->getSize(), // NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
+	};
 
-		if(descriptor.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		{
-			continue;
-		}
+	//To write the actual descriptor set
+	VkWriteDescriptorSet writeSetsArray[numDescriptors] = {};
 
-		set_write.pBufferInfo = &descriptorBufferInfo[descriptorNum++];
+	writeSetsArray[0] = basicWrite;
+	writeSetsArray[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeSetsArray[0].dstBinding = 0;
+	writeSetsArray[0].descriptorCount = 1;
+	writeSetsArray[0].pBufferInfo = &MVPBufferWrite;
 
-		descriptorWrites.emplace_back(set_write);
-	}
+	writeSetsArray[1] = basicWrite;
+	writeSetsArray[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeSetsArray[1].dstBinding = 1;
+	writeSetsArray[1].descriptorCount = 1;
+	writeSetsArray[1].pBufferInfo = &textureBufferWrite;
 
-	vkUpdateDescriptorSets(device->getDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	vkUpdateDescriptorSets(device->getDevice(), 2, &writeSetsArray[0], 0, nullptr);
 }
