@@ -2,6 +2,7 @@
 
 #include "VulkanHelpers.h"
 
+#include <mutex>
 
 namespace bs
 {
@@ -16,23 +17,29 @@ namespace bs
 		//destroy
 		void destroy();
 
-		QueueFamilyIndices getQueueFamilies();
-		SwapChainSupportDetails getSwapchainDetails();
 		VkDevice& getDevice();
+
 		VkDevice getDevice() const;
-		VkPhysicalDevice& getPhysicalDevice();
+		VkPhysicalDevice getPhysicalDevice() const;
+
+		//Get VMA Allocator
+		VmaAllocator& getAllocator();
+
+		//Get queues
+		VkQueue getPresentQueue() const;
+		VkQueue getGraphicsQueue() const;
+
+		//Other stuff
+		QueueFamilyIndices getQueueFamilies() const;
+		SwapChainSupportDetails getSwapchainDetails() const;
 
 		//Submit GFX work
 		void submitWork(std::vector<VkCommandBuffer>& cmdbuffer);
 		//Submit Data/Cmd buffer to GPU
 		void submitImmediate(std::function<void(VkCommandBuffer cmd)>&& function);
 
-		//Get VMA Allocator
-		VmaAllocator& getAllocator();
-
-		VkQueue getPresentQueue();
-		VkQueue getGraphicsQueue();
-
+		//Resource Destruction stuff, only use for lazy cleanup, manual/RAII is preferred
+		void addCleanupCall(std::function<void()>&& function);
 
 	private:
 		int getScore(VkPhysicalDevice device) const;
@@ -41,18 +48,32 @@ namespace bs
 
 		void createDevice();
 
+		//Physical Device
 		VkPhysicalDevice physDevice;
+		//Device Handle
 		VkDevice device;
 
+		//Allocator for buffers and resources
+		VmaAllocator m_allocatorVMA;
+
+		//Command Pool for submission and any other commands needed
+		VkCommandPool m_pool;
+
+		//Queues
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
 
-		VmaAllocator m_allocatorVMA;
-		VkCommandPool m_pool;
-
+		//Extensions
 		std::vector<const char*> requiredDeviceExtensions;
 		std::vector<const char*> optionalDeviceExtensions;
 
+		//Destruction queue
+		std::vector<std::function<void()>> m_resourceCleanupQueue;
+
+		//Mutex for if exclusive access is needed
+		std::mutex m_device_lock;
+
+		//Flag to show if the device was destroyed already
 		bool destroyed;
 	};
 

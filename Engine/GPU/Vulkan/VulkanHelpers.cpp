@@ -15,7 +15,7 @@ namespace bs::vk
 
 	VkInstance m_instance;
 	VkSurfaceKHR m_surface;
-	bool validationlayers = false;
+	bool validationlayers = true;
 	VkDebugUtilsMessengerEXT debugMessenger;
 
 	// SYNCHING GLOBALS
@@ -30,15 +30,15 @@ namespace bs::vk
 
 	void createInstance(const std::string& name)
 	{
-		if (validationlayers && !checkValidationLayerSupport()) 
+		if(validationlayers && !checkValidationLayerSupport()) 
 		{
-			throw std::runtime_error("validation layers requested, but not available!");
+			throw std::runtime_error("Validation layers requested, but not available!");
 		}
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appInfo.pApplicationName = name.c_str();
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "Basalt : Vinegar";
+		appInfo.pEngineName = "Basalt";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.apiVersion = VK_API_VERSION_1_2;
 
@@ -51,7 +51,8 @@ namespace bs::vk
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
 		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-		if (validationlayers) {
+		if (validationlayers) 
+		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -61,13 +62,12 @@ namespace bs::vk
 		else 
 		{
 			createInfo.enabledLayerCount = 0;
-
 			createInfo.pNext = nullptr;
 		}
 
 		if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to create instance!");
+			throw std::runtime_error("Failed to create instance!");
 		}
 	}
 

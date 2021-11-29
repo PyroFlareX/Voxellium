@@ -2,7 +2,7 @@
 
 namespace bs
 {
-	Device::Device() : destroyed(false)
+	Device::Device() : destroyed(false), m_resourceCleanupQueue({})
 	{
 		requiredDeviceExtensions =
 		{
@@ -37,10 +37,11 @@ namespace bs
 		createDevice();
 
 		//initialize the memory allocator
-		VmaAllocatorCreateInfo allocatorInfo = {};
+		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.physicalDevice = physDevice;
 		allocatorInfo.device = device;
 		allocatorInfo.instance = vk::m_instance;
+		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
 		vmaCreateAllocator(&allocatorInfo, &m_allocatorVMA);
 
 		bs::vk::createCommandPool(*this, m_pool);
@@ -53,19 +54,16 @@ namespace bs
 			return;
 		}
 
-		vkDestroyCommandPool(device, m_pool, nullptr);
-		vkDestroyDevice(device, nullptr);
+		for(const auto& resources : m_resourceCleanupQueue)
+		{
+			resources();
+		}
+
+		vmaDestroyAllocator(getAllocator());
+
+		vkDestroyCommandPool(getDevice(), m_pool, nullptr);
+		vkDestroyDevice(getDevice(), nullptr);
 		destroyed = true;
-	}
-
-	QueueFamilyIndices Device::getQueueFamilies()
-	{
-		return bs::vk::findQueueFamilies(physDevice);
-	}
-
-	SwapChainSupportDetails Device::getSwapchainDetails()
-	{
-		return bs::vk::querySwapChainSupport(physDevice);
 	}
 
 	VkDevice& Device::getDevice()
@@ -78,31 +76,63 @@ namespace bs
 		return device;
 	}
 
+	VkPhysicalDevice Device::getPhysicalDevice() const
+	{
+		return physDevice; 
+	}
+
+	VmaAllocator& Device::getAllocator()
+	{
+		return m_allocatorVMA;
+	}
+
+	VkQueue Device::getPresentQueue() const
+	{
+		return presentQueue;
+	}
+
+	VkQueue Device::getGraphicsQueue() const
+	{
+		return graphicsQueue;
+	}
+
+	QueueFamilyIndices Device::getQueueFamilies() const
+	{
+		return bs::vk::findQueueFamilies(physDevice);
+	}
+
+	SwapChainSupportDetails Device::getSwapchainDetails() const
+	{
+		return bs::vk::querySwapChainSupport(physDevice);
+	}
+
 	void Device::submitWork(std::vector<VkCommandBuffer>& cmdbuffer)
 	{
 		static int i = 0;
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		
 		const VkSemaphore waitSemaphores[] = { bs::vk::imageAvailableSemaphores[i] };
 		const VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
+		const VkSemaphore signalSemaphores[] = { bs::vk::renderFinishedSemaphores[i] };
 
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = cmdbuffer.data();
+		const VkSubmitInfo submitInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.pNext = nullptr,
+			
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = waitSemaphores,
+			.pWaitDstStageMask = waitStages,
 
-		submitInfo.signalSemaphoreCount = 1;
-
-		const VkSemaphore* signalSemaphores = &bs::vk::renderFinishedSemaphores[i];
-		submitInfo.pSignalSemaphores = signalSemaphores;
+			.commandBufferCount = 1,
+			.pCommandBuffers = cmdbuffer.data(),
+			
+			.signalSemaphoreCount = 1,
+			.pSignalSemaphores = signalSemaphores,
+		};
 
 		vkResetFences(device, 1, &bs::vk::inFlightFences[i]);
 		
 		const VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, bs::vk::inFlightFences[i]);
-		
 		if (result != VK_SUCCESS) 
 		{
 			std::cout << "Queue Submission error: " << result << "\n";
@@ -111,7 +141,7 @@ namespace bs
 		
 		vkQueueWaitIdle(graphicsQueue);
 		
-		if (bs::vk::inFlightFences[i] != VK_NULL_HANDLE) 
+		if(bs::vk::inFlightFences[i] != VK_NULL_HANDLE) 
 		{
 			vkWaitForFences(device, 1, &bs::vk::inFlightFences[i], VK_TRUE, 500000000);
 		}
@@ -119,7 +149,6 @@ namespace bs
 		// goes from 0 to the buffer count for the swapchain buffers
 		i = (i + 1) % bs::vk::NUM_SWAPCHAIN_FRAMEBUFFERS;
 	}
-
 	//NO GFX STUFF BC BREAKS AND SYNCH AND PAIN AND CRASHED DRIVERS
 	void Device::submitImmediate(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
@@ -177,24 +206,10 @@ namespace bs
 		vkResetCommandPool(device, m_pool, 0);
 	}
 
-	VmaAllocator& Device::getAllocator()
+	void Device::addCleanupCall(std::function<void()>&& function)
 	{
-		return m_allocatorVMA;
-	}
-
-	VkPhysicalDevice& Device::getPhysicalDevice()
-	{
-		return physDevice; 
-	}
-
-	VkQueue Device::getPresentQueue()
-	{
-		return presentQueue;
-	}
-
-	VkQueue Device::getGraphicsQueue()
-	{
-		return graphicsQueue;
+		std::lock_guard<std::mutex> g_cleaning(m_device_lock);
+		m_resourceCleanupQueue.emplace_back(function);
 	}
 
 	int Device::getScore(VkPhysicalDevice device) const

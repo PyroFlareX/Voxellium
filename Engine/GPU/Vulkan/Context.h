@@ -29,7 +29,7 @@ namespace bs
 
 		GLFWwindow* getContext();
 
-		void setDeviceptr(Device* pdevice);
+		void setDeviceptr(Device* p_device);
 
 		VkRenderPass getGenericRenderpass() const;
 

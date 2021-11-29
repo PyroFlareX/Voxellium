@@ -55,7 +55,7 @@ namespace bs::vk
 		void setAllocationSize(const u64 numBytes);
 
 		//Upload Buffer to allocated space in vulkan memory, reallocates if needed
-		void uploadBuffer();
+		void allocateBuffer();
 		// Uses buf desc size, copies the data in ``data`` to the buffer
 		void writeBuffer(const void* data, u64 size = 0, u64 offset = 0);
 

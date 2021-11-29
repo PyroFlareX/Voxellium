@@ -132,8 +132,8 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 
 void bs::vk::Texture::destroy()
 {
+	vkDestroySampler(p_device->getDevice(), sampler, nullptr);
+	
 	vkDestroyImageView(p_device->getDevice(), textureImgView, nullptr);
 	vmaDestroyImage(p_device->getAllocator(), textureImg, textureAllocation);
-	
-	vkDestroySampler(p_device->getDevice(), sampler, nullptr);
 }

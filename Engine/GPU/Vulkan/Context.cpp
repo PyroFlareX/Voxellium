@@ -20,12 +20,13 @@ namespace bs
 	Context::~Context()
 	{
 		//Local objects destruction
+		//Destroy Depth Image
 		vmaDestroyImage(m_device->getAllocator(), m_depthImg, m_depthImageAllocation);
 		vkDestroyImageView(m_device->getDevice(), m_depthImgView, nullptr);
+		//Destroy Render Pass
 		vkDestroyRenderPass(m_device->getDevice(), m_renderpass, nullptr);
 
-		//Beginning full destruction
-		vmaDestroyAllocator(m_device->getAllocator());
+		///Beginning full destruction
 
 		//Destroy Sync Primitives
 		for (auto& fence : bs::vk::inFlightFences)
@@ -94,30 +95,36 @@ namespace bs
 
 	void Context::update()
 	{
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.pNext = nullptr;
-		presentInfo.pResults = nullptr;
-
 		// Waits to present until the "render finished" semaphore (signal) is "signaled" (when the render is done, the semaphore is triggered by)
 		VkSemaphore signalSemaphore = bs::vk::renderFinishedSemaphores[currentFrame];
-		presentInfo.pWaitSemaphores = &signalSemaphore;
-		presentInfo.waitSemaphoreCount = 1;
-		//Pass swapchain
-		presentInfo.pSwapchains = &m_swapchain;
-		presentInfo.swapchainCount = 1;
 
-		presentInfo.pImageIndices = &imageIndex;
+		const VkPresentInfoKHR presentInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.pNext = nullptr,
+
+			//Wait Semaphores
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = &signalSemaphore,
+
+			//Pass Swapchain
+			.swapchainCount = 1,
+			.pSwapchains = &m_swapchain,
+			//Image Index
+			.pImageIndices = &imageIndex,
+
+			.pResults = nullptr,
+		};
 
 		// Submit Image that just finished rendering to the presentation surface
-		VkResult result = vkQueuePresentKHR(m_device->getPresentQueue(), &presentInfo);
+		const VkResult result = vkQueuePresentKHR(m_device->getPresentQueue(), &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
+		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
 		{
 			recreateSwapchain();
 			refresh = true;
 		} 
-		else if (result != VK_SUCCESS) 
+		else if(result != VK_SUCCESS) 
 		{
 			throw std::runtime_error("Failed to present swap chain image!");
 		}
@@ -186,9 +193,9 @@ namespace bs
 		return m_window;
 	}
 
-	void Context::setDeviceptr(Device* pdevice)
+	void Context::setDeviceptr(Device* p_device)
 	{
-		m_device = pdevice;
+		m_device = p_device;
 	}
 
 	VkRenderPass Context::getGenericRenderpass() const
@@ -226,7 +233,6 @@ namespace bs
 	{
 		//Create Swapchain
 		bs::vk::createSwapChain(m_swapchain, *m_device, m_scdetails, m_window);
-
 
 		//Create imageviews
 		bs::vk::createImageViews(m_scdetails, m_device->getDevice());
@@ -311,7 +317,7 @@ namespace bs
 		VkRenderPass renderpass;
 		if (vkCreateRenderPass(m_device->getDevice(), &renderPassInfo, nullptr, &renderpass) != VK_SUCCESS) 
 		{
-			throw std::runtime_error("failed to create render pass!");
+			throw std::runtime_error("Failed to create render pass!");
 		}
 
 		m_renderpass = renderpass;
@@ -401,7 +407,7 @@ namespace bs
 		depthViewInfo.subresourceRange.baseArrayLayer = 0;
 		depthViewInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(m_device->getDevice(), &depthViewInfo, nullptr, &m_depthImgView) != VK_SUCCESS)
+		if(vkCreateImageView(m_device->getDevice(), &depthViewInfo, nullptr, &m_depthImgView) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create depth image views!");
 		}

@@ -12,7 +12,60 @@ namespace bs::vk
 			m_desc.stride = 1;
 		}
 
-		uploadBuffer();
+		// allocateBuffer();
+		VmaAllocationCreateInfo allocInfo = {};
+		allocInfo.usage = m_desc.usage;
+
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = getSize();
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		// To get the buffer type
+		if (m_desc.bufferType & bs::vk::BufferUsage::VERTEX_BUFFER)
+		{
+			bufferInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		}
+		if (m_desc.bufferType & bs::vk::BufferUsage::INDEX_BUFFER)
+		{
+			bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		}
+		if (m_desc.bufferType & bs::vk::BufferUsage::UNIFORM_BUFFER)
+		{
+			bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		}
+		if (m_desc.bufferType & bs::vk::BufferUsage::STORAGE_BUFFER)
+		{
+			bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		}
+		if (m_desc.bufferType & bs::vk::BufferUsage::INDIRECT_BUFFER)
+		{
+			bufferInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+		}
+		if (m_desc.bufferType & bs::vk::BufferUsage::TRANSFER_BUFFER)
+		{
+			if(m_desc.usage == VMA_MEMORY_USAGE_GPU_ONLY)
+			{
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			}
+			else if(m_desc.usage == VMA_MEMORY_USAGE_CPU_ONLY)
+			{
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			}
+			else
+			{
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			}
+		}
+		
+		vmaCreateBuffer(m_desc.dev->getAllocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr);
+
+		if(m_desc.bufferData != nullptr && m_desc.usage != VMA_MEMORY_USAGE_GPU_ONLY)
+		{
+			writeBuffer(m_desc.bufferData);
+			m_desc.bufferData = nullptr;
+		}
 	}
 
 	Buffer::~Buffer()
@@ -45,7 +98,7 @@ namespace bs::vk
 		m_desc.size = numBytes;
 	}
 	
-	void Buffer::uploadBuffer()
+	void Buffer::allocateBuffer()
 	{
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = m_desc.usage;
@@ -93,6 +146,7 @@ namespace bs::vk
 			}
 		}
 		
+		deleteBuffer();
 		vmaCreateBuffer(m_desc.dev->getAllocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr);
 
 		if(m_desc.bufferData != nullptr && m_desc.usage != VMA_MEMORY_USAGE_GPU_ONLY)

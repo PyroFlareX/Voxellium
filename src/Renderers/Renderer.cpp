@@ -108,21 +108,17 @@ void Renderer::initGUI()
 	ImGuiIO& io = ImGui::GetIO();
 	//IMGUI STUFF
 	{
-		uint8_t zeroarray[120] = { 0 };
-
 		bs::vk::BufferDescription vbufdesc = {};
 		vbufdesc.bufferType = bs::vk::VERTEX_BUFFER;
-		vbufdesc.bufferData = zeroarray;
 		vbufdesc.dev = device;
 		vbufdesc.stride = sizeof(ImDrawVert);
-		vbufdesc.size = 120;
+		vbufdesc.size = 500;
 		
 		bs::vk::BufferDescription ibufdesc = {};
 		ibufdesc.bufferType = bs::vk::INDEX_BUFFER;
-		ibufdesc.bufferData = zeroarray;
 		ibufdesc.dev = device;
 		ibufdesc.stride = sizeof(ImDrawIdx);
-		ibufdesc.size = 120;
+		ibufdesc.size = 500;
 
 		////Create the ImGui Vertex Buffer
 		bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(vbufdesc), "GUIvert");

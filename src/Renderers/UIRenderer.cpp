@@ -199,8 +199,8 @@ void UIRenderer::bakeImGui()
 		vertexBuffer->setMaxElements(vertSize);
 		indexBuffer->setMaxElements(indexSize);
 
-		vertexBuffer->uploadBuffer();
-		indexBuffer->uploadBuffer();
+		vertexBuffer->allocateBuffer();
+		indexBuffer->allocateBuffer();
 	}
 	
 	u32 offsetvert = 0;

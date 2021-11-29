@@ -38,7 +38,7 @@ namespace bs::vk
 		{
 			for (auto& buffer : m_modelbuffers)
 			{
-				buffer.get()->uploadBuffer();
+				buffer.get()->allocateBuffer();
 			}
 		}*/
 
