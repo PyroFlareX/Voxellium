@@ -20,11 +20,10 @@ public:
 	//Chunk Mesh Manager
 	const ChunkMeshManager* p_mesh_manager;
 private:
-	
 	void generateChunkData();
 	static VertexInputDescription getChunkInputDescription();
 
-	std::shared_ptr<bs::vk::Buffer> m_chunkbuffer;
+	std::unique_ptr<bs::vk::Buffer> m_chunkbuffer;
 
 	// Pipeline Stuff
 

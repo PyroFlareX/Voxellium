@@ -117,7 +117,6 @@ void Worldstate::update(float dt)
 		ImGui::Text("Player Pos:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.pos.x, cam.pos.y, cam.pos.z);
 		ImGui::Text("Player Rot:\n X:%0.3f, Y:%0.3f, Z:%0.3f\n", cam.rot.x, cam.rot.y, cam.rot.z);
 		
-		
 		const auto& io = ImGui::GetIO();
 		ImGui::Text("\nFPS: %0.2f", io.Framerate);
 	}
@@ -133,7 +132,6 @@ void Worldstate::render(Renderer& renderer)
 {
 	for(const auto& obj : m_gameObjects)
 	{
-		// obj.getCurrentTransform();
 		renderer.drawObject(obj);
 	}
 

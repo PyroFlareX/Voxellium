@@ -1,13 +1,9 @@
 #include "Texture.h"
-// #include "../../AssetManager/AssetManager.h"
 
-bs::vk::Texture::Texture(bs::Device* device)
+bs::vk::Texture::Texture(bs::Device* device)	:	p_device(device)
 {
-	p_device = device;
 	// Create the img
 }
-
-// static int counter = 0;
 
 void bs::vk::Texture::loadFromImage(const bs::Image& img)
 {
@@ -59,7 +55,7 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	bufdesc.size = sizeImg;
 	bufdesc.stride = 4;
 	bufdesc.bufferData = dataPtr;
-	auto stagingbuffer = std::make_shared<bs::vk::Buffer>(bufdesc);
+	auto stagingbuffer = std::make_unique<bs::vk::Buffer>(bufdesc);
 
 	vmaCreateImage(p_device->getAllocator(), &image, &imgAllocInfo, &textureImg, &textureAllocation, nullptr);
 	
@@ -128,12 +124,10 @@ void bs::vk::Texture::loadFromImage(const bs::Image& img)
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(p_device->getDevice(), &createInfo, nullptr, &textureImgView) != VK_SUCCESS)
+	if(vkCreateImageView(p_device->getDevice(), &createInfo, nullptr, &textureImgView) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image views!");
 	}
-	//const std::string buffer_name = std::string("textureStagingBuffer") + std::to_string(counter++);
-	//bs::asset_manager->addBuffer(stagingbuffer, buffer_name);
 }
 
 void bs::vk::Texture::destroy()

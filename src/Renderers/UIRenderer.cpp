@@ -3,7 +3,6 @@
 #include "UIRenderer.h"
 
 #include <GPU/Vulkan/PipelineBuilder.h>
-
 #include <Engine.h>
 
 UIRenderer::UIRenderer(bs::Device* device, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	:	
@@ -71,6 +70,9 @@ UIRenderer::~UIRenderer()
 	// GUI/ImGui related
 	vkDestroyPipeline(p_device->getDevice(), m_gui_pipeline, nullptr);
 	vkDestroyPipelineLayout(p_device->getDevice(), m_gui_layout, nullptr);
+
+	//Cmd buffers
+	vkDestroyCommandPool(p_device->getDevice(), m_pool, nullptr);
 }
 
 void UIRenderer::addText(const std::string& text, bs::vec2i screenSpacePosition)

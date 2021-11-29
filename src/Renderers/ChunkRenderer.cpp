@@ -9,7 +9,7 @@ constexpr u32 VERTEX_INPUT_BINDING = 0;
 constexpr u32 INSTANCE_INPUT_BINDING = 1;
 
 ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	: 
-	p_device(mainDevice), m_renderpass(rpass), recorded(false)
+	p_device(mainDevice), m_renderpass(rpass), recorded(false), p_mesh_manager(nullptr)
 {
 	bs::vk::createCommandPool(*p_device, m_pool);
 
@@ -77,6 +77,8 @@ ChunkRenderer::ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDesc
 
 ChunkRenderer::~ChunkRenderer()
 {
+	m_chunkbuffer.reset();
+
 	vkDestroyPipelineLayout(p_device->getDevice(), m_pipelineLayout, nullptr);
 	vkDestroyPipeline(p_device->getDevice(), m_pipeline, nullptr);
 	vkDestroyCommandPool(p_device->getDevice(), m_pool, nullptr);
@@ -85,6 +87,11 @@ ChunkRenderer::~ChunkRenderer()
 void ChunkRenderer::buildRenderCommands()
 {
 	if(recorded)
+	{
+		return;
+	}
+
+	if(p_mesh_manager == nullptr)
 	{
 		return;
 	}
@@ -133,8 +140,8 @@ void ChunkRenderer::buildRenderCommands()
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 	
 	//Set the push constant
-	vkCmdPushConstants(cmd, m_pipelineLayout,
-		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0, nullptr);
+	//vkCmdPushConstants(cmd, m_pipelineLayout,
+	//	VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0, nullptr);
 
 	VkDeviceSize offset = 0;
 	//Bind Mesh Vertex Data, this should be staged to the GPU to ensure MAX performance
@@ -146,22 +153,20 @@ void ChunkRenderer::buildRenderCommands()
 	//Bind Index Buffer Data
 	vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer(chunk_buffer_name)->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
 
-	//Temp section, replace when doing multidraw indirect
-	if(p_mesh_manager != nullptr)
+	//Temp section, replace when doing multidraw indirect, if at all
+
+	const auto chunks_to_draw = p_mesh_manager->getChunkDrawData();
+	for(const auto& chunk : chunks_to_draw)
 	{
-		const auto chunks_to_draw = p_mesh_manager->getChunkDrawData();
-		for(const auto& chunk : chunks_to_draw)
-		{
-			std::cout << "Chunk Draw Data:\n\t"
-				<< "Indices Count: " << chunk->numIndices << "\n\t"
-				<< "Faces Count: " << chunk->faces.size() << "\n\t"
-				<< "Instance ID: " << chunk->instanceID << "\n\t"
-				<< "Starting Byte Offset: " << chunk->startOffset << "\n";
+		std::cout << "Chunk Draw Data:\n\t"
+			<< "Indices Count: " << chunk->numIndices << "\n\t"
+			<< "Faces Count: " << chunk->faces.size() << "\n\t"
+			<< "Instance ID: " << chunk->instanceID << "\n\t"
+			<< "Starting Byte Offset: " << chunk->startOffset << "\n";
 			
-			//From byte offset divided by stride to index offset
-			u32 baseIndex = chunk->startOffset / sizeof(u32);
-			vkCmdDrawIndexed(cmd, chunk->numIndices, 1, 0, 0, chunk->instanceID);
-		}
+		//From byte offset divided by stride to index offset
+		u32 baseIndex = chunk->startOffset / sizeof(u32);
+		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, 0, 0, chunk->instanceID);
 	}
 
 	vkEndCommandBuffer(cmd);
@@ -201,7 +206,7 @@ void ChunkRenderer::generateChunkData()
 		.bufferData = chunkVerts.data(),
 	};
 
-	m_chunkbuffer = std::make_shared<bs::vk::Buffer>(chunkdata);
+	m_chunkbuffer = std::make_unique<bs::vk::Buffer>(chunkdata);
 }
 
 VertexInputDescription ChunkRenderer::getChunkInputDescription()
