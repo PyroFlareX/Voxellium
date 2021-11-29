@@ -131,17 +131,16 @@ void Worldstate::lateUpdate(Camera& cam)
 
 void Worldstate::render(Renderer& renderer)
 {
-	for (auto& obj : m_gameObjects)
+	for(const auto& obj : m_gameObjects)
 	{
-		obj.getCurrentTransform();
+		// obj.getCurrentTransform();
 		renderer.drawObject(obj);
 	}
 
-	//static int prevRenderedChunks = 0;
-	//if(prevRenderedChunks != m_world.getMeshManager().getNumChunks())
-	//{
-		renderer.recreateChunkDrawCommands(m_world.getMeshManager().getChunkDrawData());
-	//	prevRenderedChunks = m_world.getMeshManager().getNumChunks();
-		//std::cout << "Drawing: " << prevRenderedChunks << "\n";
-	//}
+	static bool firstRun = true;
+	if(firstRun)
+	{
+		renderer.passChunkMeshGenerator(&m_world.getMeshManager());
+		firstRun = false;
+	}
 }

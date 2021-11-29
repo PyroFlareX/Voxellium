@@ -16,7 +16,8 @@ public:
 	//NOT DONE DO NOT USE
 	void drawText();
 	//Create Chunk Draw Lists
-	void recreateChunkDrawCommands(const std::vector<Chunk::ChunkMesh>& drawInfos);
+	void recreateChunkDrawLists();
+	void passChunkMeshGenerator(const void* chunk_mesh_manager);
 
 	//Pass tell the subrenderers to generate list queues
 	void render(Camera& cam);
@@ -62,7 +63,6 @@ private:
 	bs::Device* device;
 
 	//Descriptor Handle Stuff
-
 	VkDescriptorPool m_descpool;
 	VkDescriptorSet m_descsetglobal;
 	VkDescriptorSetLayout desclayout;

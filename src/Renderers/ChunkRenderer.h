@@ -11,12 +11,15 @@ public:
 	ChunkRenderer(bs::Device* mainDevice, VkRenderPass& rpass, VkDescriptorSetLayout desclayout);
 	~ChunkRenderer();
 
-	void buildRenderCommands(const std::vector<Chunk::ChunkMesh>& drawInfos);
+	void buildRenderCommands();
 
 	void executeCommands(VkCommandBuffer cmd);
 	
-private:
 	void clearCommandBuffer();
+
+	//Chunk Mesh Manager
+	const ChunkMeshManager* p_mesh_manager;
+private:
 	
 	void generateChunkData();
 	static VertexInputDescription getChunkInputDescription();

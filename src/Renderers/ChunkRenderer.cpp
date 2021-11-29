@@ -82,8 +82,13 @@ ChunkRenderer::~ChunkRenderer()
 	vkDestroyCommandPool(p_device->getDevice(), m_pool, nullptr);
 }
 
-void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& drawInfos)
+void ChunkRenderer::buildRenderCommands()
 {
+	if(recorded)
+	{
+		return;
+	}
+
 	//Dynamic State Stuff:
 	const VkExtent2D extent
 	{
@@ -114,7 +119,6 @@ void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& dra
 	auto& cmd = m_renderlist[0];
 
 	//Begin the RECORDING!!!
-	clearCommandBuffer();
 	vkBeginCommandBuffer(cmd, &m_beginInfo);
 	
 	//Bind the descriptor set
@@ -143,17 +147,21 @@ void ChunkRenderer::buildRenderCommands(const std::vector<Chunk::ChunkMesh>& dra
 	vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer(chunk_buffer_name)->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
 
 	//Temp section, replace when doing multidraw indirect
-	for(const auto& chunk : drawInfos)
+	if(p_mesh_manager != nullptr)
 	{
-		std::cout << "Chunk Draw Data:\n\t"
-			<< "Indices Count: " << chunk->numIndices << "\n\t"
-			<< "Faces Count: " << chunk->faces.size() << "\n\t"
-			<< "Instance ID: " << chunk->instanceID << "\n\t"
-			<< "Starting Byte Offset: " << chunk->startOffset << "\n";
-		
-		//From byte offset divided by stride to index offset
-		u32 baseIndex = chunk->startOffset / sizeof(u32);
-		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, 0, 0, 0/*chunk->instanceID*/);
+		const auto chunks_to_draw = p_mesh_manager->getChunkDrawData();
+		for(const auto& chunk : chunks_to_draw)
+		{
+			std::cout << "Chunk Draw Data:\n\t"
+				<< "Indices Count: " << chunk->numIndices << "\n\t"
+				<< "Faces Count: " << chunk->faces.size() << "\n\t"
+				<< "Instance ID: " << chunk->instanceID << "\n\t"
+				<< "Starting Byte Offset: " << chunk->startOffset << "\n";
+			
+			//From byte offset divided by stride to index offset
+			u32 baseIndex = chunk->startOffset / sizeof(u32);
+			vkCmdDrawIndexed(cmd, chunk->numIndices, 1, 0, 0, chunk->instanceID);
+		}
 	}
 
 	vkEndCommandBuffer(cmd);

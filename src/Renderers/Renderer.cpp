@@ -156,9 +156,14 @@ void Renderer::drawText()
 	m_UIRenderer->addText("Example Text", {500, 500});
 }
 
-void Renderer::recreateChunkDrawCommands(const std::vector<Chunk::ChunkMesh>& drawInfos)
+void Renderer::recreateChunkDrawLists()
 {
-	m_chunkRenderer->buildRenderCommands(drawInfos);
+	m_chunkRenderer->clearCommandBuffer();
+}
+
+void Renderer::passChunkMeshGenerator(const void* chunk_mesh_manager)
+{
+	m_chunkRenderer->p_mesh_manager = (const ChunkMeshManager*)chunk_mesh_manager;
 }
 
 void Renderer::render(Camera& cam)
@@ -176,6 +181,7 @@ void Renderer::render(Camera& cam)
 
 	m_generalRenderer->render(cam);
 	m_UIRenderer->render();
+	m_chunkRenderer->buildRenderCommands();
 
 	jobSystem.wait();
 }
