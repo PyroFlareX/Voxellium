@@ -188,10 +188,6 @@ void ChunkRenderer::generateChunkData()
 {
 	auto chunkVerts = createFullChunkMesh();
 
-	std::cout << "Base Chunk Mesh Data:\n\t"
-		<< "Num Vertices: " << chunkVerts.size() << "\n\t"
-		<< "Size in Bytes: " << chunkVerts.size() * sizeof(bs::vec4) << "\n";
-
 	const bs::vk::BufferDescription stagingDescription
 	{
 		.dev = p_device,
@@ -250,6 +246,13 @@ void ChunkRenderer::generateChunkData()
 		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &cpyFinishBarrier, 0, nullptr);
 	});
 
+	VmaAllocationInfo allocationInfo;
+	vmaGetAllocationInfo(p_device->getAllocator(), m_chunkbuffer->getAllocation(), &allocationInfo);
+
+	std::cout << "Base Chunk Mesh Data:\n\t"
+		<< "Num Vertices: " << chunkVerts.size() << "\n\t"
+		<< "Size in Bytes: " << chunkVerts.size() * sizeof(bs::vec4) << "\n\t"
+		<< "Transfered onto GPU Only Memory index: " << allocationInfo.memoryType << "\n"; 
 }
 
 VertexInputDescription ChunkRenderer::getChunkInputDescription()
