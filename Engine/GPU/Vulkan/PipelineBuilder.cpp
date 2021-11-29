@@ -201,14 +201,14 @@ namespace bs::vk
 		{
 			constants.size = pushConstantStructSize;
 			m_layoutinfo.pushConstantRangeCount = 1;
+			m_layoutinfo.pPushConstantRanges = &constants;
 		}
 		else
 		{
 			constants.size = 0;
 			m_layoutinfo.pushConstantRangeCount = 0;
+			m_layoutinfo.pPushConstantRanges = nullptr;
 		}
-
-		m_layoutinfo.pPushConstantRanges = &constants;
 
 		VkResult result = vkCreatePipelineLayout(p_device->getDevice(), &m_layoutinfo, nullptr, &m_layout);
 		if(result != VK_SUCCESS) 
