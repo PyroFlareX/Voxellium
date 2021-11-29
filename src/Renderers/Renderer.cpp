@@ -68,7 +68,7 @@ Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: devi
 	{
 		.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		.bindingSlot = numDescriptors - 1,
-		.count = 1,
+		.count = (u32)bs::asset_manager->getNumTextures(),
 	});
 
 	descriptorInfos.emplace_back(DescriptorSetInfo
@@ -84,7 +84,7 @@ Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: devi
 	initDescriptorSets(descriptorInfos);
 
 	// Initializing the descriptor set buffers
-	initDescriptorSetBuffers();
+	initDescriptorSetBuffers(descriptorInfos);
 
 	//Create General Renderer
 	m_generalRenderer = std::make_unique<GeneralRenderer>(device, m_renderpassdefault, desclayout);
@@ -273,23 +273,9 @@ void Renderer::clearQueue()
 void Renderer::pushGPUData(Camera& cam)
 {
 	//Buffer Writing Info
-	VkDescriptorBufferInfo bufferInfo1 = {};
-	auto buf = bs::asset_manager->getBuffer("MVP");
-	bufferInfo1.buffer = buf->getAPIResource();
-	bufferInfo1.offset = 0;
-	bufferInfo1.range = buf->getSize();//192;
-
-
-	const auto textureStorageBuffer = bs::asset_manager->getBuffer("chunk_texture_data");
-	const VkDescriptorBufferInfo chunkTextureInfo
-	{
-		.buffer = textureStorageBuffer->getAPIResource(),
-		.offset = 0,//instanceData.textureSlotOffset,
-		.range = textureStorageBuffer->getSize(),//NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
-	};
+	auto mvp_buf = bs::asset_manager->getBuffer("MVP");
 
 	const bs::Transform t;
-
 	struct MVPstruct
 	{
 		bs::mat4 proj;
@@ -301,8 +287,8 @@ void Renderer::pushGPUData(Camera& cam)
 		.view	= cam.getViewMatrix(), 
 		.model	= bs::makeModelMatrix(t),
 	};
-
-	buf->writeBuffer(&MVP);
+	//Update the camera buffer
+	mvp_buf->writeBuffer(&MVP);
 
 	//Image Writing Info
 	//Collect textures
@@ -321,31 +307,18 @@ void Renderer::pushGPUData(Camera& cam)
 	
 	//Writing Info
 	VkWriteDescriptorSet descWrite[numDescriptors] = {};
+
 	descWrite[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descWrite[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descWrite[0].dstSet = m_descsetglobal;
-	descWrite[0].dstBinding = 0;
-	descWrite[0].dstArrayElement = 0; //Starting array element
-	descWrite[0].descriptorCount = 1; //Number to write over
-	descWrite[0].pBufferInfo = &bufferInfo1;
+	descWrite[0].dstBinding = numDescriptors - 1;
+	descWrite[0].dstArrayElement = 0;
+	descWrite[0].descriptorCount = imageinfo.size();
+	descWrite[0].pImageInfo = imageinfo.data();
 
-	descWrite[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descWrite[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descWrite[1].dstSet = m_descsetglobal;
-	descWrite[1].dstBinding = 1;
-	descWrite[1].dstArrayElement = 0;
-	descWrite[1].descriptorCount = imageinfo.size();
-	descWrite[1].pImageInfo = imageinfo.data();
+	//Update the descriptor to the current texture handles
 
-	descWrite[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descWrite[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	descWrite[2].dstSet = m_descsetglobal;
-	descWrite[2].dstBinding = 2;
-	descWrite[2].dstArrayElement = 0; //Starting array element
-	descWrite[2].descriptorCount = 1; //Number to write over
-	descWrite[2].pBufferInfo = &chunkTextureInfo;
-
-	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
+	vkUpdateDescriptorSets(device->getDevice(), 1, &descWrite[0], 0, nullptr);
 }
 
 void Renderer::initCommandPoolAndBuffers()
@@ -371,14 +344,20 @@ void Renderer::initCommandPoolAndBuffers()
 void Renderer::initDescriptorPool(const std::vector<DescriptorSetInfo>& sets)
 {
 	//Some layouts stuff
-	VkDescriptorPoolSize descpoolsize[numDescriptors] = {};
+	VkDescriptorPoolSize desc_pool_size[numDescriptors];
+	//Blank init the pool array
+	for(auto i = 0; i < numDescriptors; i += 1)
+	{
+		desc_pool_size[i].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		desc_pool_size[i].descriptorCount = 1;
+	}
 
+	//Add the proper stuff to the pool
 	for(const auto& descriptor : sets)
 	{
 		const u32 bindingSlot = descriptor.bindingSlot;
-
-		descpoolsize[bindingSlot].type = descriptor.type;
-		descpoolsize[bindingSlot].descriptorCount = descriptor.count;
+		desc_pool_size[bindingSlot].type = descriptor.type;
+		desc_pool_size[bindingSlot].descriptorCount = descriptor.count;
 	}
 
 	//Descriptor pool stuff
@@ -390,7 +369,7 @@ void Renderer::initDescriptorPool(const std::vector<DescriptorSetInfo>& sets)
 		.maxSets = 100,
 
 		.poolSizeCount = numDescriptors,
-		.pPoolSizes = &descpoolsize[0],
+		.pPoolSizes = &desc_pool_size[0],
 	};
 
 	VkResult result = vkCreateDescriptorPool(device->getDevice(), &desc_pool_info, nullptr, &m_descpool);
@@ -405,6 +384,17 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 {
 	// Descriptor Sets
 	VkDescriptorSetLayoutBinding setLayoutBinding[numDescriptors];
+	//Blank init the array
+	for(auto i = 0; i < numDescriptors; i += 1)
+	{
+		setLayoutBinding[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		setLayoutBinding[i].binding = i;
+		setLayoutBinding[i].descriptorCount = 1;
+
+		setLayoutBinding[i].stageFlags = VK_SHADER_STAGE_ALL;
+		setLayoutBinding[i].pImmutableSamplers = nullptr;
+	}
+
 	for(const auto& descriptor : sets)
 	{
 		const u32 bindingSlot = descriptor.bindingSlot;
@@ -418,8 +408,8 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 	}
 
 	//For texture indexing:
-	std::vector<VkDescriptorBindingFlags> flags(0, numDescriptors);
-	flags.back() = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+	std::vector<VkDescriptorBindingFlags> flags(numDescriptors, 0);
+	flags.at(flags.size() - 1) = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 	
 	const VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags
 	{
@@ -477,7 +467,7 @@ void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 	bs::asset_manager->pDescsetglobal = &m_descsetglobal;
 }
 
-void Renderer::initDescriptorSetBuffers()
+void Renderer::initDescriptorSetBuffers(const std::vector<DescriptorSetInfo>& sets)
 {
 	typedef struct
 	{
@@ -501,17 +491,14 @@ void Renderer::initDescriptorSetBuffers()
 	uniform.size = sizeof(MVP);
 	uniform.stride = sizeof(bs::mat4);
 	uniform.bufferData = &uniformbufferthing;
-
 	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(uniform), "MVP");
-
+	auto mvp_buffer = bs::asset_manager->getBuffer("MVP");
 
 	//CHUNK TEXTURE INDEX STORAGE BUFFERS
 	//@TODO: THIS IS A TEST! Remove this when actually adding the textures
 
-	const std::string texture_storage_buffer_name("chunk_texture_data");
 	constexpr auto storageType = bs::vk::BufferUsage::STORAGE_BUFFER;
-
-	auto NUM_CHUNKS = (2 * 2) * 4 * 16;
+	const auto NUM_CHUNKS = (2 * 2) * 4 * 16;
 	bs::vk::BufferDescription basicDescription
 	{
 		.dev = device,
@@ -521,19 +508,62 @@ void Renderer::initDescriptorSetBuffers()
 	};
 
 	//Chunks Texture Indexing Storage Buffer
-	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), texture_storage_buffer_name);
-
-	auto face_texture_buffer = bs::asset_manager->getBuffer(texture_storage_buffer_name);
+	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), "chunk_texture_data");
+	auto face_texture_buffer = bs::asset_manager->getBuffer("chunk_texture_data");
 
 	void* bufferptr = nullptr;
 	vmaMapMemory(device->getAllocator(), face_texture_buffer->getAllocation(), &bufferptr);
 
 	u16* buffer = (u16*)bufferptr;
-
 	for(auto varCount = 0; varCount < face_texture_buffer->getSize() / sizeof(u16); varCount += 1)
 	{
 		buffer[varCount] = 1;
 	}
 
 	vmaUnmapMemory(device->getAllocator(), face_texture_buffer->getAllocation());
+
+
+	//NOW Update the descriptor sets
+	VkWriteDescriptorSet basicWrite;
+	basicWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	basicWrite.dstSet = m_descsetglobal;
+	basicWrite.dstArrayElement = 0; //Starting array element
+	basicWrite.descriptorCount = 1; //Number to write over
+
+	//Buffer Writing Info
+	const std::vector<VkDescriptorBufferInfo> descriptorBufferInfo({
+		VkDescriptorBufferInfo 
+		{	//MVP
+			.buffer = mvp_buffer->getAPIResource(),
+			.offset = 0,
+			.range = mvp_buffer->getSize(), // 192
+		},
+		VkDescriptorBufferInfo 
+		{	//Chunk Texture Info
+			.buffer = face_texture_buffer->getAPIResource(),
+			.offset = 0,
+			.range = face_texture_buffer->getSize(), // NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
+		}
+	});
+
+	std::vector<VkWriteDescriptorSet> descriptorWrites;
+	u32 descriptorNum = 0;
+	for(const auto& descriptor : sets)
+	{
+		VkWriteDescriptorSet set_write = basicWrite;
+		set_write.descriptorType = descriptor.type;
+		set_write.dstBinding = descriptor.bindingSlot;
+		set_write.descriptorCount = descriptor.count;
+
+		if(descriptor.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			continue;
+		}
+
+		set_write.pBufferInfo = &descriptorBufferInfo[descriptorNum++];
+
+		descriptorWrites.emplace_back(set_write);
+	}
+
+	vkUpdateDescriptorSets(device->getDevice(), descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 }

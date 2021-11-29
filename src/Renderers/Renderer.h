@@ -52,7 +52,7 @@ private:
 	void initDescriptorPool(const std::vector<DescriptorSetInfo>& sets);
 	void initDescriptorSets(const std::vector<DescriptorSetInfo>& sets);
 
-	void initDescriptorSetBuffers();
+	void initDescriptorSetBuffers(const std::vector<DescriptorSetInfo>& sets);
 
 	//Pipeline/Vulkan Command Buffers stuff
 	VkPipeline imguipipeline;
