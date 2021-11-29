@@ -45,7 +45,7 @@ void main()
 	vec4 result = vec4(ambient + diffuse, 1.0);
 
 	//Texture Index
-	const int t_index = int(vertexData.textureIDFiller.x);
+	const int t_index = 0;//int(vertexData.textureIDFiller.x);
 	
 	//Output
 	FragColor = texture(textures[t_index], vertexData.textureCoordinates) * result;
