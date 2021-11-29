@@ -9,6 +9,12 @@
 UIRenderer::UIRenderer(bs::Device* device, VkRenderPass& rpass, VkDescriptorSetLayout desclayout)	:	
 	m_renderpass(rpass), p_device(device)
 {
+	//Create the command pool
+	bs::vk::createCommandPool(*p_device, m_pool);
+
+	//Number of cmd buffers to have
+	m_renderlist.resize(1);
+
 	const VkCommandBufferAllocateInfo allocInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -18,10 +24,10 @@ UIRenderer::UIRenderer(bs::Device* device, VkRenderPass& rpass, VkDescriptorSetL
 		.commandBufferCount = (u32)m_renderlist.size(),
 	};
 
-	/*if(vkAllocateCommandBuffers(p_device->getDevice(), &allocInfo, m_renderlist.data()) != VK_SUCCESS) 
+	if(vkAllocateCommandBuffers(p_device->getDevice(), &allocInfo, m_renderlist.data()) != VK_SUCCESS) 
 	{
 		throw std::runtime_error("Failed to allocate command buffers!");
-	}*/
+	}
 
 	//Cmd buffer Inheritance info init
 	m_inheritanceInfo = VkCommandBufferInheritanceInfo
@@ -60,18 +66,25 @@ UIRenderer::UIRenderer(bs::Device* device, VkRenderPass& rpass, VkDescriptorSetL
 	bs::vk::createUIPipeline(*p_device, m_gui_pipeline, m_renderpass, m_gui_layout, desclayout);
 }
 
+UIRenderer::~UIRenderer()
+{
+	// GUI/ImGui related
+	vkDestroyPipeline(p_device->getDevice(), m_gui_pipeline, nullptr);
+	vkDestroyPipelineLayout(p_device->getDevice(), m_gui_layout, nullptr);
+}
+
 void UIRenderer::addText(const std::string& text, bs::vec2i screenSpacePosition)
 {
 	m_text.emplace_back(text, screenSpacePosition);
 }
 
-void UIRenderer::render()
+void UIRenderer::ImGuiRender()
 {	
 	drawText();
 }
 
-void UIRenderer::finish(VkCommandBuffer& guiBuffer)
-{
+void UIRenderer::render()
+{	
 	const auto& io = ImGui::GetIO();
 	const VkViewport vport
 	{
@@ -83,7 +96,9 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 		.maxDepth = 1.0f
 	};
 
-	auto& cmd = guiBuffer;
+	vkResetCommandPool(p_device->getDevice(), m_pool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+	auto& cmd = m_renderlist.at(0);
+
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_gui_pipeline);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_gui_layout, 0, 1, bs::asset_manager->pDescsetglobal, 0, nullptr);
 
@@ -154,15 +169,21 @@ void UIRenderer::finish(VkCommandBuffer& guiBuffer)
 	}
 }
 
+void UIRenderer::executeCommands(VkCommandBuffer cmd)
+{
+	vkCmdExecuteCommands(cmd, 1, m_renderlist.data());
+}
+
 void UIRenderer::bakeImGui()
 {
 	//Draw IMGUI stuff | temp, move to UIRenderer eventually | or maybe keep here, there's no reason to move it? idk
-	auto* drawData = ImGui::GetDrawData();
+	const auto* drawData = ImGui::GetDrawData();
 
 	auto vertexBuffer = bs::asset_manager->getBuffer("GUIvert");
 	auto indexBuffer = bs::asset_manager->getBuffer("GUIindex");
-	int vertSize = drawData->TotalVtxCount;
-	int indexSize = drawData->TotalIdxCount;
+
+	const u32 vertSize = drawData->TotalVtxCount;
+	const u32 indexSize = drawData->TotalIdxCount;
 
 	//Checks if the buffers need to be recreated |	if the num of verticies or indices is more than 
 	//												the amount in the buffer, then reallocated buffers
@@ -175,11 +196,11 @@ void UIRenderer::bakeImGui()
 		indexBuffer->uploadBuffer();
 	}
 	
-	int offsetvert = 0;
-	int offsetindex = 0;
+	u32 offsetvert = 0;
+	u32 offsetindex = 0;
 	for(int n = 0; n < drawData->CmdListsCount; ++n)
 	{
-		ImDrawList* cmdlist = drawData->CmdLists[n];
+		const ImDrawList* cmdlist = drawData->CmdLists[n];
 		vertexBuffer->writeBuffer(cmdlist->VtxBuffer.Data, cmdlist->VtxBuffer.size_in_bytes(), offsetvert);
 		indexBuffer->writeBuffer(cmdlist->IdxBuffer.Data, cmdlist->IdxBuffer.size_in_bytes(), offsetindex);
 

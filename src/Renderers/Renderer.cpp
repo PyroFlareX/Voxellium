@@ -96,9 +96,6 @@ Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: devi
 
 Renderer::~Renderer()
 {
-	// GUI/ImGui related
-	vkDestroyPipeline(device->getDevice(), imguipipeline, nullptr);
-	vkDestroyPipelineLayout(device->getDevice(), guilayout, nullptr);
 	// Destroy the rest of the Vulkan allocations
 	vkDestroyCommandPool(device->getDevice(), m_pool, nullptr);
 	vkDestroyDescriptorSetLayout(device->getDevice(), desclayout, nullptr);
@@ -166,7 +163,7 @@ void Renderer::recreateChunkDrawCommands(const std::vector<Chunk::ChunkMesh>& dr
 
 void Renderer::render(Camera& cam)
 {
-	m_UIRenderer->render();
+	// m_UIRenderer->ImGuiRender();
 
 	ImGui::Render();
 	ImGui::EndFrame();
@@ -178,6 +175,7 @@ void Renderer::render(Camera& cam)
 	jobSystem.wait();
 
 	m_generalRenderer->render(cam);
+	m_UIRenderer->render();
 
 	jobSystem.wait();
 }
@@ -188,38 +186,47 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 	//Second Pass
 	auto renderLists = m_generalRenderer->getRenderlists(); // The secondary command buffers
 
-	// FOR IM GUI BULLSHIT 
-	{
-		auto& cmd = renderLists.at(0);
-		m_UIRenderer->finish(cmd);
-	}
+	
+	
+	//Clear values for renderpass
+	const VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+	VkClearValue clearDepth = { };
+	clearDepth.depthStencil.depth = 1.0f;
+	const VkClearValue clearValues[2] = { clearColor, clearDepth };
 
-	//Renderpass info stuff
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = m_renderpassdefault;
-	renderPassInfo.framebuffer = fbo.handle[index];
-	renderPassInfo.renderArea.offset = { 0, 0 };
 	//Extent defining for renderpass
 	const VkExtent2D extent
 	{
 		.width = bs::vk::viewportwidth,
 		.height = bs::vk::viewportheight,
 	};
-	renderPassInfo.renderArea.extent = extent;
 
-	//Clear values for renderpass
-	const VkClearValue clearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-	VkClearValue clearDepth = { };
-	clearDepth.depthStencil.depth = 1.0f;
-	const VkClearValue clearValues[2] = { clearColor, clearDepth };
-	renderPassInfo.clearValueCount = 2;
-	renderPassInfo.pClearValues = &clearValues[0];
+	//Renderpass info stuff
+	const VkRenderPassBeginInfo renderPassInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.pNext = nullptr,
+		.renderPass = m_renderpassdefault,
+		.framebuffer = fbo.handle[index],
+		.renderArea = 
+		{
+			.offset = { 0, 0 },
+			.extent = extent,
+		},
+
+		.clearValueCount = 2,
+		.pClearValues = &clearValues[0],
+	};	
 
 	//Primary Buffer Recording
 	//Begin Info
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	constexpr VkCommandBufferBeginInfo beginInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+		.pInheritanceInfo = nullptr,
+	};
 
 	for(auto& cmd : m_primaryBuffers)
 	{
@@ -236,22 +243,25 @@ void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
 
 		/**
 		 * Order: (if/when it matters, depth buffer makes this partially irrelevant)
-		 * #1: General Renderer / UI
+		 * #1: General Renderer
 		 * ...
 		 * Chunk Renderer
-		 * 
+		 * ...
 		 * The others
 		 * ...
-		 * 
+		 * #end: UI Renderer
 		**/
 		
-		//Execute all the cmd buffers for the general renderer and UI
+		//Execute all the cmd buffers for the general renderer
 		m_generalRenderer->executeCommands(cmd);
 
 		//Chunk Renderer
 		m_chunkRenderer->executeCommands(cmd);
 		//OTHERS
 		// ...
+
+		//UI Renderer
+		m_UIRenderer->executeCommands(cmd);
 
 		/// ENDING THE RECORDING
 		vkCmdEndRenderPass(cmd);
@@ -317,7 +327,6 @@ void Renderer::pushGPUData(Camera& cam)
 	descWrite[0].pImageInfo = imageinfo.data();
 
 	//Update the descriptor to the current texture handles
-
 	vkUpdateDescriptorSets(device->getDevice(), 1, &descWrite[0], 0, nullptr);
 }
 

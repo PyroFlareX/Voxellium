@@ -54,10 +54,7 @@ private:
 
 	void initDescriptorSetBuffers(const std::vector<DescriptorSetInfo>& sets);
 
-	//Pipeline/Vulkan Command Buffers stuff
-	VkPipeline imguipipeline;
-	VkPipelineLayout guilayout;
-
+	//Vulkan Stuff
 	VkRenderPass m_renderpassdefault;
 	std::vector<VkCommandBuffer> m_primaryBuffers;
 	VkCommandPool m_pool;

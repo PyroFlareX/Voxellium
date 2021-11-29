@@ -159,7 +159,10 @@ void GeneralRenderer::render(Camera& cam)
 
 void GeneralRenderer::executeCommands(VkCommandBuffer cmd)
 {
-	vkCmdExecuteCommands(cmd, m_renderlist.size(), m_renderlist.data());
+	if(m_queue.size() > 0)
+	{
+		vkCmdExecuteCommands(cmd, m_queue.size(), m_renderlist.data());
+	}
 }
 
 void GeneralRenderer::clearQueue()
