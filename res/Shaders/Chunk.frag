@@ -3,6 +3,8 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
+const int textureBindingSlot = 7;
+
 struct vertexOutputData
 {
 	vec3 fragPos;
@@ -11,11 +13,14 @@ struct vertexOutputData
 	vec4 textureIDFiller;
 };
 
+//Fragment output
 layout (location = 0) out vec4 FragColor;
 
+//Input from vertex shader
 layout (location = 0) in vertexOutputData vertexData;
 
-layout (set = 0, binding = 1) uniform sampler2D textures[];
+//Descriptor set buffers
+layout ( set = 0, binding = textureBindingSlot ) uniform sampler2D textures[];
 
 void main()
 {
@@ -42,5 +47,6 @@ void main()
 	//Texture Index
 	const int t_index = int(vertexData.textureIDFiller.x);
 	
+	//Output
 	FragColor = texture(textures[t_index], vertexData.textureCoordinates) * result;
 } 

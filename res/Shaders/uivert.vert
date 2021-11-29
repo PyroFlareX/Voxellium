@@ -2,18 +2,19 @@
 
 #extension GL_ARB_separate_shader_objects : enable
 
-struct outVert
+struct vertexOutputData
 {
 	vec2 textureCoordinates;
     vec4 color;
 	vec4 textureID;
 };
 
+//Per-Vertex Inputs
 layout (location = 0) in vec2 inPos;
 layout (location = 1) in vec2 inUV;
 layout (location = 2) in vec4 inColor;
 
-layout (location = 0) out outVert outVertShader;
+layout (location = 0) out vertexOutputData outVertShader;
 
 layout ( push_constant ) uniform constants
 {

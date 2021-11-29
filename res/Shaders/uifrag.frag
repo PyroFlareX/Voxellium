@@ -3,7 +3,9 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-struct outVert
+const int textureBindingSlot = 7;
+
+struct vertexOutputData
 {
 	vec2 textureCoordinates;
     vec4 color;
@@ -12,9 +14,9 @@ struct outVert
 
 layout ( location = 0 ) out vec4 FragColor;
 
-layout ( location = 0 ) in outVert outVertShader;
+layout ( location = 0 ) in vertexOutputData outVertShader;
 
-layout ( set = 0, binding = 1 ) uniform sampler2D textures[];
+layout ( set = 0, binding = textureBindingSlot ) uniform sampler2D textures[];
 
 void main()
 {

@@ -5,7 +5,7 @@
 
 #include "../World/Meshing/MeshingData.h"
 
-constexpr int numDescriptors = 3;
+constexpr int numDescriptors = 8;
 
 Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: device(renderingDevice), m_renderpassdefault(genericPass)
 {
@@ -53,10 +53,36 @@ Renderer::Renderer(bs::Device* renderingDevice, VkRenderPass genericPass)	: devi
 	//Init the command pool and the cmd buffer
 	initCommandPoolAndBuffers();
 
+	//Create the descriptor sets info
+	std::vector<DescriptorSetInfo> descriptorInfos;
+	u32 slots = 0;
+
+	descriptorInfos.emplace_back(DescriptorSetInfo
+	{
+		.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		.bindingSlot = slots++,
+		.count = 1,
+	});
+
+	descriptorInfos.emplace_back(DescriptorSetInfo
+	{
+		.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.bindingSlot = numDescriptors - 1,
+		.count = 1,
+	});
+
+	descriptorInfos.emplace_back(DescriptorSetInfo
+	{
+		.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		.bindingSlot = slots++,
+		.count = 1,
+	});
+
 	// Descriptor Pool
-	initDescriptorPool();
+	initDescriptorPool(descriptorInfos);
 	// Descriptor Set
-	initDescriptorSets();
+	initDescriptorSets(descriptorInfos);
+
 	// Initializing the descriptor set buffers
 	initDescriptorSetBuffers();
 
@@ -323,7 +349,27 @@ void Renderer::pushGPUData(Camera& cam)
 	vkUpdateDescriptorSets(device->getDevice(), numDescriptors, &descWrite[0], 0, nullptr);
 }
 
-void Renderer::initDescriptorPool()
+void Renderer::initCommandPoolAndBuffers()
+{
+	bs::vk::createCommandPool(*device, m_pool);
+
+	m_primaryBuffers.resize(1);
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = m_pool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = m_primaryBuffers.size();
+	
+	VkResult result = vkAllocateCommandBuffers(device->getDevice(), &allocInfo, m_primaryBuffers.data());
+	if(result != VK_SUCCESS) 
+	{
+		std::cerr << "Failed to allocate command buffers, error code: " << result << "\n";
+		throw std::runtime_error("failed to allocate command buffers!");
+	}
+}
+
+void Renderer::initDescriptorPool(const std::vector<DescriptorSetInfo>& sets)
 {
 	//Descriptor pool stuff
 	VkDescriptorPoolCreateInfo descpoolinfo{};
@@ -354,91 +400,80 @@ void Renderer::initDescriptorPool()
 	}
 }
 
-void Renderer::initDescriptorSets()
+void Renderer::initDescriptorSets(const std::vector<DescriptorSetInfo>& sets)
 {
 	// Descriptor Sets
-	VkDescriptorSetLayoutBinding setlayoutbinding[numDescriptors] = {};
-	setlayoutbinding[0].binding = 0;
-	setlayoutbinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	setlayoutbinding[0].stageFlags = VK_SHADER_STAGE_ALL;
-	setlayoutbinding[0].descriptorCount = 1;
+	VkDescriptorSetLayoutBinding setLayoutBinding[numDescriptors];
+	for(const auto& descriptor : sets)
+	{
+		const u32 bindingSlot = descriptor.bindingSlot;
 
-	setlayoutbinding[1].binding = 1;
-	setlayoutbinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	setlayoutbinding[1].stageFlags = VK_SHADER_STAGE_ALL;
-	setlayoutbinding[1].descriptorCount = bs::asset_manager->getNumTextures();
+		setLayoutBinding[bindingSlot].descriptorType = descriptor.type;
+		setLayoutBinding[bindingSlot].binding = bindingSlot;
+		setLayoutBinding[bindingSlot].descriptorCount = descriptor.count;
 
-	setlayoutbinding[2].binding = 2;
-	setlayoutbinding[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	setlayoutbinding[2].stageFlags = VK_SHADER_STAGE_ALL;
-	setlayoutbinding[2].descriptorCount = 1;
+		setLayoutBinding[bindingSlot].stageFlags = VK_SHADER_STAGE_ALL;
+		setLayoutBinding[bindingSlot].pImmutableSamplers = nullptr;
+	}
 
 	//For texture indexing:
-	VkDescriptorSetLayoutBindingFlagsCreateInfo layoutbindingflags = {};
-	layoutbindingflags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-	layoutbindingflags.bindingCount = numDescriptors;
-	VkDescriptorBindingFlags flags[numDescriptors] = { 0, VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0 };
-	layoutbindingflags.pBindingFlags = flags;
-
+	std::vector<VkDescriptorBindingFlags> flags(0, numDescriptors);
+	flags.back() = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+	
+	const VkDescriptorSetLayoutBindingFlagsCreateInfo layoutBindingFlags
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+		.pNext = nullptr,
+		.bindingCount = (u32)flags.size(),
+		.pBindingFlags = flags.data(),
+	};
 
 	//Layout Creation for bindings
-	VkDescriptorSetLayoutCreateInfo desclayoutinfo{};
-	desclayoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	desclayoutinfo.pNext = nullptr;//&layoutbindingflags;
-	desclayoutinfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-	desclayoutinfo.bindingCount = numDescriptors;
-	desclayoutinfo.pBindings = &setlayoutbinding[0];
+	const VkDescriptorSetLayoutCreateInfo descLayoutInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.pNext = &layoutBindingFlags,
+		.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+		.bindingCount = numDescriptors,
+		.pBindings = &setLayoutBinding[0],
+	};
 		
 	//Creating the layouts for the descriptor sets
-	VkResult result = vkCreateDescriptorSetLayout(device->getDevice(), &desclayoutinfo, nullptr, &desclayout);
+	VkResult result = vkCreateDescriptorSetLayout(device->getDevice(), &descLayoutInfo, nullptr, &desclayout);
 	if(result != VK_SUCCESS)
 	{
 		std::cerr << "Creating Descriptor Set Layout Failed, result = " << result << "\n";
 	}
 
-	//Descriptor Allocation Info
-	VkDescriptorSetAllocateInfo descriptorAllocInfo{};
-	descriptorAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	//For descriptor indexing, pNext member
+	const u32 varDescCount[] = { (u32)bs::asset_manager->getNumTextures() };
+	const VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescAlloc
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
+		.pNext = nullptr,
+		.descriptorSetCount = 1,
+		.pDescriptorCounts = varDescCount,
+	};
 
-	//For descriptor indexing
-	VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescAlloc = {};
-	variableDescAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
-	variableDescAlloc.descriptorSetCount = 1;
-	u32 varDescCount[] = { (u32)bs::asset_manager->getNumTextures() };
-	variableDescAlloc.pDescriptorCounts = varDescCount;
-	//Filling the pNext
-	descriptorAllocInfo.pNext = &variableDescAlloc;
-	descriptorAllocInfo.descriptorPool = m_descpool;
-	descriptorAllocInfo.descriptorSetCount = 1;
-	descriptorAllocInfo.pSetLayouts = &desclayout;
-		
+	//Descriptor Allocation Info
+	const VkDescriptorSetAllocateInfo descriptorAllocInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.pNext = &variableDescAlloc,
+		.descriptorPool = m_descpool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &desclayout,
+	};
+	
+	//Vulkan call to allocate the descriptor sets
 	result = vkAllocateDescriptorSets(device->getDevice(), &descriptorAllocInfo, &m_descsetglobal);
 	if(result != VK_SUCCESS)
 	{
 		std::cerr << "Allocate Descriptor Sets Failed, result = " << result << "\n";
 	}
 
+	//Put the descriptor set as a global into the asset manager
 	bs::asset_manager->pDescsetglobal = &m_descsetglobal;
-}
-
-void Renderer::initCommandPoolAndBuffers()
-{
-	bs::vk::createCommandPool(*device, m_pool);
-
-	m_primaryBuffers.resize(1);
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = m_pool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = m_primaryBuffers.size();
-	
-	VkResult result = vkAllocateCommandBuffers(device->getDevice(), &allocInfo, m_primaryBuffers.data());
-	if(result != VK_SUCCESS) 
-	{
-		std::cerr << "Failed to allocate command buffers, error code: " << result << "\n";
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
 }
 
 void Renderer::initDescriptorSetBuffers()

@@ -37,12 +37,24 @@ public:
 private:
 	void initGUI();
 
-	void initDescriptorPool();
-	void initDescriptorSets();
+	//Info for descriptors; as struct
+	struct DescriptorSetInfo
+	{
+		VkDescriptorType	type;
+		u32 				bindingSlot;
+		u32					count;
+	};
 
+	//Helper Functions for init
+	
 	void initCommandPoolAndBuffers();
+	
+	void initDescriptorPool(const std::vector<DescriptorSetInfo>& sets);
+	void initDescriptorSets(const std::vector<DescriptorSetInfo>& sets);
+
 	void initDescriptorSetBuffers();
 
+	//Pipeline/Vulkan Command Buffers stuff
 	VkPipeline imguipipeline;
 	VkPipelineLayout guilayout;
 
@@ -51,6 +63,8 @@ private:
 	VkCommandPool m_pool;
 
 	bs::Device* device;
+
+	//Descriptor Handle Stuff
 
 	VkDescriptorPool m_descpool;
 	VkDescriptorSet m_descsetglobal;

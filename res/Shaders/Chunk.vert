@@ -5,6 +5,8 @@
 
 #extension GL_EXT_shader_16bit_storage : require
 
+const int textureBindingSlot = 7;
+
 struct vertexOutputData
 {
 	vec3 fragPos;
@@ -14,15 +16,17 @@ struct vertexOutputData
 };
 
 //Normal Attributes
-layout(location = 0) in vec4 packedData;
+layout( location = 0 ) in vec4 packedData;
 
 //Instanced Attributes
-layout(location = 1) in ivec3 chunkPos;
-layout(location = 2) in uint textureBufferOffset;	//This is derivable from the InstanceID I think?
+layout( location = 1 ) in ivec3 chunkPos;
+layout( location = 2 ) in uint textureBufferOffset;	//This is derivable from the InstanceID I think?
 
-layout (location = 0) out vertexOutputData vertexData;
+//The output data to the fragment shader
+layout ( location = 0 ) out vertexOutputData vertexData;
 
-layout (set = 0, binding = 0) uniform MVP
+//Descriptor Set Buffers
+layout ( set = 0, binding = 0 ) uniform MVP
 {
 	mat4 proj;
 	mat4 view;
@@ -35,17 +39,20 @@ const int CHUNK_VOLUME = CHUNK_AREA * CHUNK_SIZE;
 const int NUM_SIDES = 6;
 
 const int NUM_FACES_IN_CHUNK = CHUNK_VOLUME * NUM_SIDES;
-layout (set = 0, binding = 2, std430) readonly buffer TextureLayoutData
+layout ( set = 0, binding = 1, std430 ) readonly buffer TextureLayoutData
 {
 	uint16_t faceTexture[NUM_FACES_IN_CHUNK];
 } faceTextures[];
 
+//FUNCTIONS FOR THE SHADER
 
+//Unpack the direction from the packed data
 int getDirection(float packedw)
 {
 	return int(floor(mod(packedw, 100.0f) / 10.0f) - 1);
 }
 
+//Get the vertex normal from the packed data
 vec3 getNormal(float packedw)
 {
 	const vec3 directions[6] = 
@@ -60,11 +67,13 @@ vec3 getNormal(float packedw)
 	return directions[getDirection(packedw)];
 }
 
+//Get which corner, 1, 2, 3, or 4 them vertex is from the packed data
 int getCorner(float packedw)
 {
 	return int(mod(packedw, 10.0f));
 }
 
+//Get the texture coordinates of the vertex from the corner
 vec2 getTextureCoordinates(int corner)
 {
 	if(corner == 1)
@@ -88,11 +97,13 @@ vec2 getTextureCoordinates(int corner)
 	return vec2(0, 0);	
 }
 
+//Get which block this is from the packed data
 int getBlockIndex(float packedw)
 {
 	return int(packedData / 100);
 }
 
+//Get which face this is from the packed data
 int getFaceIndex(float packedw)
 {
 	return getBlockIndex(packedw) + CHUNK_VOLUME * getDirection(packedw);

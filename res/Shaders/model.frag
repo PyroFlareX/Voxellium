@@ -3,25 +3,30 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_nonuniform_qualifier : require
 
-struct outVert
+const int textureBindingSlot = 7;
+
+struct vertexOutputData
 {
 	vec3 fragPos;
 	vec3 normal;
 	vec2 textureCoordinates;
 };
 
+//Fragment output
 layout (location = 0) out vec4 FragColor;
 
-layout (location = 0) in outVert outVertShader;
+//Input from vertex shader
+layout (location = 0) in vertexOutputData outVertShader;
 
-layout (set = 0, binding = 0) uniform MVP
+//Descriptor set buffers
+layout ( set = 0, binding = 0 ) uniform MVP
 {
 	mat4 proj;
 	mat4 view;
 	mat4 model;
 } CameraData;
 
-layout (set = 0, binding = 1) uniform sampler2D textures[];
+layout ( set = 0, binding = textureBindingSlot ) uniform sampler2D textures[];
 
 layout ( push_constant ) uniform constants
 {
