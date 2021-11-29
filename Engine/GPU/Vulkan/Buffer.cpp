@@ -48,7 +48,7 @@ namespace bs::vk
 	void Buffer::uploadBuffer()
 	{
 		VmaAllocationCreateInfo allocInfo = {};
-		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+		allocInfo.usage = m_desc.usage;
 
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -78,18 +78,24 @@ namespace bs::vk
 		}
 		if (m_desc.bufferType & bs::vk::BufferUsage::TRANSFER_BUFFER)
 		{
-			bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-			allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+			if(m_desc.usage == VMA_MEMORY_USAGE_GPU_ONLY)
+			{
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			}
+			else if(m_desc.usage == VMA_MEMORY_USAGE_CPU_ONLY)
+			{
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			}
+			else
+			{
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+				bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			}
 		}
-		/*else
-		{
-			bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-			std::cout << "There is a buffer allocation description issue!\n";
-		}*/
 		
 		vmaCreateBuffer(m_desc.dev->getAllocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr);
 
-		if(m_desc.bufferData != nullptr)
+		if(m_desc.bufferData != nullptr && m_desc.usage != VMA_MEMORY_USAGE_GPU_ONLY)
 		{
 			writeBuffer(m_desc.bufferData);
 			m_desc.bufferData = nullptr;

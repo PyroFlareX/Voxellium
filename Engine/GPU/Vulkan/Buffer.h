@@ -7,7 +7,7 @@
 namespace bs::vk 
 {
 	//Type of buffer
-	enum BufferUsage
+	typedef enum BufferUsage
 	{
 		VERTEX_BUFFER = 1 << 0,
 		INDEX_BUFFER = 1 << 1,
@@ -15,7 +15,7 @@ namespace bs::vk
 		STORAGE_BUFFER = 1 << 3,
 		INDIRECT_BUFFER = 1 << 4,
 		TRANSFER_BUFFER = 1 << 5
-	};
+	} BufferUsage;
 
 	//Describes the layout of the buffer
 	struct BufferDescription
@@ -30,6 +30,9 @@ namespace bs::vk
 		u64 stride = 0;
 		//Pointer to data
 		void* bufferData = nullptr;
+
+		//BUFFER Alloc USAGE
+		VmaMemoryUsage usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 	};
 
 	//Wrapper for Vulkan Buffers
