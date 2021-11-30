@@ -2,7 +2,7 @@
 
 #include "../Types/Chunk.h"
 
-#include <mutex>
+#include <shared_mutex>
 
 class World;
 
@@ -75,10 +75,10 @@ private:
 	//Add the given chunk to the buffer (might add a location offset argument)
 	void addChunkToBuffer(const Chunk::ChunkMesh chunk);
 
-	// void updateChunk();
-
 	//Compresses and realigns the space and offsets within the buffer
 	void condenseBuffer();
+
+	void reallocateBuffers();
 
 	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
 	static constexpr std::array<u32, 6> getIndicesFromFaceIndex(const u16 faceIndex);
@@ -101,11 +101,12 @@ private:
 	//Render Distance
 	u32 m_renderDistance;
 
+	// @TODO: Fix the const functions or implement this in a slightly different way somehow so that
+	//		the const member functions can shared_lock these too maybe?
 	//The Various mutex(es)
-	std::mutex m_slot_lock;
-	std::mutex m_drop_lock;
-	std::mutex m_cache_lock;
-	std::mutex m_glob_lock;
+	std::shared_mutex m_slot_lock;
+	std::shared_mutex m_drop_lock;
+	std::shared_mutex m_cache_lock;
 
 	//Stores the open areas of the buffer
 	struct span

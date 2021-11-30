@@ -42,7 +42,6 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	bs::Device* p_device = bs::asset_manager->getTextureMutable(0).getDevice();
 
 	//Creating the buffers
-	
 	bs::vk::BufferDescription basicDescription
 	{
 		.dev = p_device,
@@ -75,6 +74,8 @@ ChunkMeshManager::~ChunkMeshManager()
 void ChunkMeshManager::setRenderDistance(const u32 renderDistance)
 {
 	m_renderDistance = renderDistance;
+
+	//@TODO make this reallocate and regenerate EVERYTHING
 }
 
 bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
@@ -105,21 +106,19 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 
 	//After this, safe syncronization must happen, because the state is mutated
 
-	//Messing with slot allocations
 	//Get the offset for the indices
 	drawInfo->startOffset = reserveOpenSlot(data_length);
 	
-	//Messing with the stored buffer arrays
-	std::lock_guard<std::mutex> g_array_lock(m_cache_lock);
+	//Stored buffer arrays/cache
+	std::unique_lock<std::shared_mutex> g_array_lock(m_cache_lock);
 	drawInfo->instanceID = m_activeChunks.size(); //last part filled, chunk can be added to buffer now
 
 	m_activeChunks.emplace_back(chunk.getChunkPos());
 	m_chunk_draw_data.emplace_back(drawInfo);
 
-
 	//Add chunk into the buffers
 	//This is can be called from multiple threads if the args don't have overlapping data
-	//Can be called async
+	//Can be called asyncronously
 	addChunkToBuffer(drawInfo);
 
 	return true;
@@ -127,8 +126,7 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 
 void ChunkMeshManager::canDrop(const pos_xyz chunkPosition)
 {
-	std::lock_guard<std::mutex> g_drop(m_drop_lock);
-
+	std::unique_lock<std::shared_mutex> g_drop(m_drop_lock);
 	m_droppableChunks.emplace_back(chunkPosition);
 }
 
@@ -139,6 +137,10 @@ void ChunkMeshManager::canDrop(const Chunk& chunk)
 
 bool ChunkMeshManager::isChunkCached(const pos_xyz chunkPosition) const
 {
+	// @TODO: evaluate the performance impact of these mutexes
+
+	//For the droppable chunk section only
+	// std::shared_lock<std::shared_mutex> g_slot(m_drop_lock);
 	for(const auto& chunk : m_droppableChunks)
 	{
 		if(chunk == chunkPosition)
@@ -147,6 +149,8 @@ bool ChunkMeshManager::isChunkCached(const pos_xyz chunkPosition) const
 		}
 	}
 
+	//For the active chunk section only
+	// std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
 	for(const auto& chunk : m_activeChunks)
 	{
 		if(chunk == chunkPosition)
@@ -154,6 +158,8 @@ bool ChunkMeshManager::isChunkCached(const pos_xyz chunkPosition) const
 			return true;
 		}
 	}
+
+	//Chunk is NOT cached
 	return false;
 }
 
@@ -164,11 +170,14 @@ bool ChunkMeshManager::isChunkCached(const Chunk& chunk) const
 
 u32 ChunkMeshManager::getNumChunks() const
 {
+	//I don't think a shared lock is needed for this, since it's a 'safe' function according to the spec
+	//std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
 	return m_activeChunks.size();
 }
 
 const std::vector<Chunk::ChunkMesh>& ChunkMeshManager::getChunkDrawData() const
 {
+	// std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
 	return m_chunk_draw_data;
 }
 
@@ -247,6 +256,21 @@ void ChunkMeshManager::condenseBuffer()
 	//And reallocate the buffer if needed too
 
 	//@TODO: Implement this
+	throw std::runtime_error("Not yet implemented!\n");
+}
+
+void ChunkMeshManager::reallocateBuffers()
+{
+	//Lock EVERYTHING
+
+	// @TODO: actually implement lol
+	throw std::runtime_error("Not yet implemented!\n");
+
+	//Set new space requirements for buffers
+	//Allocate them (again ig)
+
+	//Update the descriptor set for the storage buffer
+	//	(I think) (Reasoning being the old VkBuffer was destroyed, the new one is a different handle/"pointer")
 }
 
 ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) const
@@ -311,7 +335,6 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 				mesh.meshindicies[meshIndex + j] = indexArray[j];
 			}
 		}
-
 		jobSystem.wait(0, false, &meshingCounter);
 	}
 	else
@@ -332,6 +355,8 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 
 i64 ChunkMeshManager::findOpenSlot(const u32 data_length) const
 {
+	// std::shared_lock<std::shared_mutex> g_slot(m_slot_lock);
+	
 	for(const auto& freeSpace : m_open_spans)
 	{
 		if(freeSpace.length >= data_length)
@@ -339,23 +364,21 @@ i64 ChunkMeshManager::findOpenSlot(const u32 data_length) const
 			return freeSpace.start;
 		}
 	}
-	
 	return -1;
 }
 
 bool ChunkMeshManager::reserveSlot(const u32 start, const u32 data_length)
 {
-	const u32 end = start + data_length;
+	std::unique_lock<std::shared_mutex> g_slot(m_slot_lock);
 
+	const u32 end = start + data_length;
 	for(auto& freeSpace : m_open_spans)
 	{
 		const u32 spaceStart = freeSpace.start;
 		const u32 spaceEnd = spaceStart + freeSpace.length;
 		if(spaceStart <= start && spaceEnd >= end)
 		{
-			//Boom
 			//Change the space in the buffer
-
 			if(freeSpace.start == start)
 			{
 				//If the buffer begins are the same
@@ -380,17 +403,15 @@ bool ChunkMeshManager::reserveSlot(const u32 start, const u32 data_length)
 				freeSpace = front;
 				m_open_spans.emplace_back(back);
 			}
-
 			return true;
 		}
 	}
-
 	return false;
 }
 
 u32 ChunkMeshManager::reserveOpenSlot(const u32 data_length)
 {
-	std::lock_guard<std::mutex> g_slot(m_slot_lock);
+	std::unique_lock<std::shared_mutex> g_slot(m_slot_lock);
 
 	for(auto& freeSpace : m_open_spans)
 	{
