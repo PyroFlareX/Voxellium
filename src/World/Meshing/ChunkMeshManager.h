@@ -73,7 +73,7 @@ private:
 	///Private Member Functions
 
 	//Add the given chunk to the buffer (might add a location offset argument)
-	void addChunkToBuffer(const Chunk& chunk);
+	void addChunkToBuffer(const Chunk::ChunkMesh chunk);
 
 	// void updateChunk();
 
@@ -91,6 +91,7 @@ private:
 
 	i64 findOpenSlot(const u32 data_length) const;
 	bool reserveSlot(const u32 start, const u32 data_length);
+	u32 reserveOpenSlot(const u32 data_length);
 
 	///Member variables
 
@@ -100,8 +101,11 @@ private:
 	//Render Distance
 	u32 m_renderDistance;
 
-	//Vector Modification mutex
-	std::mutex m_lock;
+	//The Various mutex(es)
+	std::mutex m_slot_lock;
+	std::mutex m_drop_lock;
+	std::mutex m_cache_lock;
+	std::mutex m_glob_lock;
 
 	//Stores the open areas of the buffer
 	struct span
@@ -111,13 +115,13 @@ private:
 	};
 	std::vector<span> m_open_spans;
 
-	//Draw Data Holder
-	std::vector<Chunk::ChunkMesh> m_chunk_draw_data;
-
 	//The actively drawn chunks
 	std::vector<pos_xyz> m_activeChunks;
 	//Use like a GC
 	std::vector<pos_xyz> m_droppableChunks;
+
+	//Chunk Draw Info
+	std::vector<Chunk::ChunkMesh> m_chunk_draw_data;
 };
 
 constexpr std::array<u32, 6> ChunkMeshManager::getIndicesFromFaceIndex(const u16 faceIndex)

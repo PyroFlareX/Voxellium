@@ -24,38 +24,47 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	 * Initialize the span for the index buffer data allocator
 	 * 
 	*/
+	
+	/// Calculating initial size of the buffer
+	constexpr auto INDICES_PER_CHUNK = 6 * CHUNK_AREA * 2; //Literally arbitrary
+	// @TODO: Write an actual algorithm for estimating this ^
 
-	//Indices count
-	constexpr auto worstCaseIndicesPerChunk = NUM_FACES_IN_FULL_CHUNK * 6; //147456 B
-
-	const u32 NUM_CHUNKS = renderDistance * renderDistance * 4 * 16; // (2r)^2 * 16 (for height)
+	//This is a cylinder, 16 chunks tall, and a base with radius of m_renderDistance
+	//Maybe consider other geometries?
+	const u32 chunkCacheSize = (glm::pi<double>() * m_renderDistance * m_renderDistance + 0.5) * CHUNK_SIZE;
+	const u32 num_indices = INDICES_PER_CHUNK * chunkCacheSize;
 
 	//Placing the initial full span for open slots
-	m_open_spans.emplace_back(0, NUM_CHUNKS * worstCaseIndicesPerChunk * sizeof(u32));
+	//Initializing the span
+	m_open_spans.emplace_back(0, num_indices * sizeof(u32));	// [0 - byteLen)
 	
 	//Get device pointer
 	bs::Device* p_device = bs::asset_manager->getTextureMutable(0).getDevice();
 
 	//Creating the buffers
-	constexpr auto indexType = bs::vk::BufferUsage::INDEX_BUFFER;
-	constexpr auto instancedType = bs::vk::BufferUsage::VERTEX_BUFFER;
-	constexpr auto storageType = bs::vk::BufferUsage::STORAGE_BUFFER;
+	
 	bs::vk::BufferDescription basicDescription
 	{
 		.dev = p_device,
-		.bufferType = indexType,
-		.size = NUM_CHUNKS * worstCaseIndicesPerChunk * sizeof(u32),
+		.bufferType = bs::vk::BufferUsage::INDEX_BUFFER,
+		.size = num_indices * sizeof(u32),
 		.stride = sizeof(u32),
 	};
 
 	//Chunk Index Buffer
 	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), chunk_buffer_name);
 
-	basicDescription.bufferType = instancedType;
+	basicDescription.bufferType = bs::vk::BufferUsage::VERTEX_BUFFER;
 	basicDescription.stride = sizeof(ChunkInstanceData);
-	basicDescription.size = NUM_CHUNKS * sizeof(ChunkInstanceData);
+	basicDescription.size = chunkCacheSize * sizeof(ChunkInstanceData);
+
 	//Chunks Instance Buffer
 	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), instance_buffer_name);
+
+	//Resizing the chunk texture face buffer with the number of chunks
+	auto texture_storage_buffer = bs::asset_manager->getBuffer(texture_storage_buffer_name);
+	texture_storage_buffer->setAllocationSize(NUM_FACES_IN_FULL_CHUNK * chunkCacheSize * sizeof(u16));
+	texture_storage_buffer->allocateBuffer();
 }
 
 ChunkMeshManager::~ChunkMeshManager()
@@ -70,53 +79,62 @@ void ChunkMeshManager::setRenderDistance(const u32 renderDistance)
 
 bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 {
-	if(chunk.hasMesh())
+	//If chunk is already cached, and doesn't need to be updated, then it is already cached and up to date
+	if(isChunkCached(chunk))
 	{
-		return false;
+		if(!chunk.needsMesh())
+		{
+			return false;
+		}
 	}
 
-	//createDrawInfoFromChunk is in ChunkMesher.h/cpp
+	//Independent Call, this is expensive however
 	auto drawInfo = std::make_shared<ChunkDrawInfo>(createDrawInfoFromChunk(chunk));
+	const u32 data_length = drawInfo->numIndices * sizeof(u32);
 
-	//For the data length in the indices array
-	const u32 length = drawInfo->numIndices * sizeof(u32);
-	const auto baseOffset = findOpenSlot(length);
-	drawInfo->startOffset = static_cast<u32>(baseOffset);
-
-	if(baseOffset < 0)
+	//See if a slot can be found for it
+	if(findOpenSlot(data_length) < 0)
 	{
-		//COULD NOT FIND SPACE FOR CHUNK!!!
-		std::cout << "Could not find space in index array.\n";
+		//Do a check to see if this logically *should* happen
+		// @TODO: Have the check, and reconfigure and condense buffers if necessary
+
+		//The caching failed
+		// std::cout << "Could not find space in index array.\n";
 		return false;
 	}
 
-	if(!reserveSlot(baseOffset, length))
-	{
-		//COULD NOT ALLOCATE!!!
-		std::cout << "Could not reserve slot in index array.\n";
-		return false;
-	}
+	//After this, safe syncronization must happen, because the state is mutated
+
+	//Messing with slot allocations
+	//Get the offset for the indices
+	drawInfo->startOffset = reserveOpenSlot(data_length);
 	
-	drawInfo->instanceID = m_activeChunks.size();
+	//Messing with the stored buffer arrays
+	std::lock_guard<std::mutex> g_array_lock(m_cache_lock);
+	drawInfo->instanceID = m_activeChunks.size(); //last part filled, chunk can be added to buffer now
 
-	std::lock_guard<std::mutex> g_array_lock(m_lock);
 	m_activeChunks.emplace_back(chunk.getChunkPos());
 	m_chunk_draw_data.emplace_back(drawInfo);
 
+
 	//Add chunk into the buffers
-	addChunkToBuffer(chunk);
-	
+	//This is can be called from multiple threads if the args don't have overlapping data
+	//Can be called async
+	addChunkToBuffer(drawInfo);
+
 	return true;
 }
 
 void ChunkMeshManager::canDrop(const pos_xyz chunkPosition)
 {
+	std::lock_guard<std::mutex> g_drop(m_drop_lock);
+
 	m_droppableChunks.emplace_back(chunkPosition);
 }
 
 void ChunkMeshManager::canDrop(const Chunk& chunk)
 {
-	m_droppableChunks.emplace_back(chunk.getChunkPos());
+	canDrop(chunk.getChunkPos());
 }
 
 bool ChunkMeshManager::isChunkCached(const pos_xyz chunkPosition) const
@@ -154,39 +172,30 @@ const std::vector<Chunk::ChunkMesh>& ChunkMeshManager::getChunkDrawData() const
 	return m_chunk_draw_data;
 }
 
-void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
+void ChunkMeshManager::addChunkToBuffer(const Chunk::ChunkMesh chunk)
 {
-	int indexOfChunk = -1;
-	for(auto i = 0; i < m_activeChunks.size(); i+=1)
-	{
-		if(m_activeChunks[i] == chunk.getChunkPos())
-		{
-			indexOfChunk = i;
-			break;
-		}
-	}
-	assert(indexOfChunk >= 0);
-	//Get chunk draw info
-	const auto drawInfo = m_chunk_draw_data[indexOfChunk];
-
 	//Build the index mesh
-	const IndexMesh indexMesh = buildIndexMesh(*drawInfo);
+	const IndexMesh indexMesh = buildIndexMesh(*chunk);
 
 	//Add to index buffer
 	auto index_buffer = bs::asset_manager->getBuffer(chunk_buffer_name);
-	index_buffer->writeBuffer(indexMesh.meshindicies.data(), drawInfo->numIndices * sizeof(u32), drawInfo->startOffset);
+	index_buffer->writeBuffer(indexMesh.meshindicies.data(), chunk->numIndices * sizeof(u32), chunk->startOffset);
 
 	//Add to instance buffer
 	auto instance_buffer = bs::asset_manager->getBuffer(instance_buffer_name);
 	const ChunkInstanceData instanceData 
 	{
-		.position = chunk.getChunkPos(),
-		.textureSlotOffset = indexOfChunk * NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
+		.position = chunk->chunk_pos,
+		.textureSlotOffset = chunk->instanceID * NUM_FACES_IN_FULL_CHUNK * sizeof(u16),
 	};
 	instance_buffer->writeBuffer(&instanceData, sizeof(ChunkInstanceData), instanceData.textureSlotOffset);
 
 	//Add to face texture index buffer
 	auto face_texture_buffer = bs::asset_manager->getBuffer(texture_storage_buffer_name);
+
+	//ALSO:
+	//	Maybe have the buffers persistently mapped?
+	//		When reallocating, remap them and update the descriptor sets
 
 
 	//@TODO: Fix the manager accessing to have the following capabilities:
@@ -229,11 +238,6 @@ void ChunkMeshManager::addChunkToBuffer(const Chunk& chunk)
 		face_texture_buffer->writeBuffer(&face.textureID, sizeof(u16), offset);
 	}*/
 	
-	//Add the draw info to the chunk
-	{	
-		//Mutate the passed chunk
-		const_cast<Chunk*>(&chunk)->setMesh(drawInfo);
-	}
 }
 
 void ChunkMeshManager::condenseBuffer()
@@ -261,21 +265,22 @@ ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) cons
 const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo& drawInfo) const
 {
 	IndexMesh mesh;
-	mesh.meshindicies.reserve(drawInfo.numIndices);
+	mesh.meshindicies.resize(drawInfo.faces.size() * 6);
+
+	constexpr auto WORKGROUP_SIZE = 32;
 
 	//32 per thread, so if 1.5 of a thread, then parallelize
-	constexpr u32 facesWorkPerThread = 32;
+	constexpr u32 facesWorkPerThread = WORKGROUP_SIZE;
 	const bool shouldThreadIndexBuilding = (drawInfo.faces.size() >= (facesWorkPerThread * 1.5f));
 
 	if(shouldThreadIndexBuilding)
 	{
-		mesh.meshindicies.resize(drawInfo.faces.size() * 6);
-		const auto curJobs = jobSystem.remainingJobs();
-		const u32 numWorkers = drawInfo.faces.size() / facesWorkPerThread;
+		Counter meshingCounter(0);
 
-		for(u32 executionID = 0; executionID < numWorkers; executionID += 1)
+		const auto numWorkers = drawInfo.faces.size() / facesWorkPerThread;
+		for(auto executionID = 0; executionID < numWorkers; executionID += 1)
 		{
-			const Job indexBuilder = jobSystem.createJob([&, executionID](Job j)
+			jobSystem.schedule(jobSystem.createJob([&drawInfo, &mesh, executionID](Job j)
 			{
 				const u32 start = executionID * facesWorkPerThread;	//Starting Face
 				const u32 end = start + facesWorkPerThread;			//Ending Face
@@ -291,8 +296,7 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 						mesh.meshindicies[meshIndex + j] = indexArray[j];
 					}
 				}
-			});
-			jobSystem.schedule(indexBuilder);
+			}, nullptr, &meshingCounter));
 		}
 
 		const u32 IndexRemaining = drawInfo.faces.size() - (drawInfo.faces.size() % facesWorkPerThread);
@@ -308,10 +312,11 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 			}
 		}
 
-		jobSystem.wait(curJobs);
+		jobSystem.wait(0, false, &meshingCounter);
 	}
 	else
 	{
+		mesh.meshindicies.clear();
 		for(const auto& face : drawInfo.faces)	// [0, faces.size())
 		{
 			const auto indices = getIndicesFromFaceIndex(face.faceIndex);
@@ -329,8 +334,7 @@ i64 ChunkMeshManager::findOpenSlot(const u32 data_length) const
 {
 	for(const auto& freeSpace : m_open_spans)
 	{
-		const auto space = freeSpace.length - freeSpace.start;
-		if(space >= data_length)
+		if(freeSpace.length >= data_length)
 		{
 			return freeSpace.start;
 		}
@@ -382,4 +386,25 @@ bool ChunkMeshManager::reserveSlot(const u32 start, const u32 data_length)
 	}
 
 	return false;
+}
+
+u32 ChunkMeshManager::reserveOpenSlot(const u32 data_length)
+{
+	std::lock_guard<std::mutex> g_slot(m_slot_lock);
+
+	for(auto& freeSpace : m_open_spans)
+	{
+		if(freeSpace.length >= data_length)
+		{
+			const auto start = freeSpace.start;
+			freeSpace.start = start + data_length;
+			freeSpace.length -= data_length;
+
+			return start;
+		}
+	}
+	
+	throw std::runtime_error("Failed to reserve an open slot while supposedly guarunteed!!!");
+
+	return -1;
 }

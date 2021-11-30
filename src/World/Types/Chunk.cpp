@@ -83,36 +83,3 @@ void Chunk::setRemeshingFlag()
 	m_needs_mesh = false;
 	m_empty = checkIfEmpty();
 }
-
-void Chunk::setMesh(const ChunkMesh managed_mesh)
-{
-	std::weak_ptr<ChunkDrawInfo> mesh_handle(managed_mesh);
-	m_mesh_handle.swap(mesh_handle);
-}
-
-bool Chunk::hasMesh() const
-{
-	return !m_mesh_handle.expired();
-}
-	
-Chunk::ChunkMesh Chunk::getChunkMesh() const
-{
-	if(hasMesh())
-	{
-		return m_mesh_handle.lock();
-	}
-	else
-	{
-		return std::make_shared<ChunkDrawInfo>();
-		/*ChunkDrawInfo c_info;
-		c_info.chunk_pos = chunk.getChunkPos();
-
-		//THIS IS EXPENSIVE!!!
-		c_info.faces = generateFacesForChunk(m_world, chunk);
-		c_info.numIndices = c_info.faces.size() * 6;
-		c_info.startOffset = 0;
-
-		m_mesh_handle = mesh;
-		return mesh;*/
-	}
-}

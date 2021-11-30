@@ -56,20 +56,18 @@ public:
 
 	//Set the flag so that only one remesh on this is active
 	void setRemeshingFlag();
-	
-	//To give a handle to the (?) mesh
-	using ChunkMesh = std::shared_ptr<ChunkDrawInfo>;
-	void setMesh(const ChunkMesh managed_mesh);
-	bool hasMesh() const;
-	ChunkMesh getChunkMesh() const;
 
 	//Checks whether empty
 	bool checkIfEmpty() const noexcept;
+	
+	//Alias for chunk draw info ptr
+	using ChunkMesh = std::shared_ptr<ChunkDrawInfo>;
 
 private:
 	/// Members
 	//Array of block ids, to store the data for the chunk
 	std::array<block_t, CHUNK_VOLUME> m_chunk_layout;
+	
 	//The local position of the chunk in world (as chunk coordinates)
 	const pos_xyz m_pos;
 
@@ -79,7 +77,4 @@ private:
 	//Set when the chunk needs to be updated too
 	//Whether the chunk wants a new mesh built
 	bool m_needs_mesh;
-
-	//A non-owning ref to the chunk's mesh
-	std::weak_ptr<ChunkDrawInfo> m_mesh_handle;
 };
