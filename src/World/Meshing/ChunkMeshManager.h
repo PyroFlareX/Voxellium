@@ -81,7 +81,6 @@ private:
 	void reallocateBuffers();
 
 	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
-	static constexpr std::array<u32, 6> getIndicesFromFaceIndex(const u16 faceIndex);
 
 	struct IndexMesh
 	{
@@ -124,30 +123,3 @@ private:
 	//Chunk Draw Info
 	std::vector<Chunk::ChunkMesh> m_chunk_draw_data;
 };
-
-constexpr std::array<u32, 6> ChunkMeshManager::getIndicesFromFaceIndex(const u16 faceIndex)
-{
-	// Meshing constants
-	constexpr auto NUM_SIDES = 6;
-	constexpr auto NUM_FACES_PER_SIDE = CHUNK_VOLUME;
-	constexpr auto NUM_VERTS_PER_SIDE = NUM_FACES_PER_SIDE * 4;
-	constexpr auto NUM_FACES_IN_FULL_CHUNK = NUM_FACES_PER_SIDE * NUM_SIDES;
-	constexpr auto NUM_VERTS_IN_FULL_CHUNK = NUM_FACES_IN_FULL_CHUNK * 4;
-	constexpr auto NUM_INDICES_IN_FULL_CHUNK = NUM_FACES_IN_FULL_CHUNK * 6;
-	
-	//Indices order
-	constexpr std::array<u32, 6> indicesList
-	{
-		0, 1, 2,
-		2, 3, 0
-	};
-
-	//The offset
-	const u32 baseIndex = faceIndex * 4;
-
-	return std::array<u32, 6>
-	{{
-		baseIndex + indicesList[0], baseIndex + indicesList[1], baseIndex + indicesList[2],
-		baseIndex + indicesList[3], baseIndex + indicesList[4], baseIndex + indicesList[5]
-	}};
-}

@@ -17,12 +17,10 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	 * Stuff that should happen:
 	 * 
 	 * Calculate the number of chunk space to allocate from the render distance
-	 * 
 	 * Initialize the chunk instance buffer & size
 	 * Resize the face storage buffer for number of chunks
 	 * 
 	 * Initialize the span for the index buffer data allocator
-	 * 
 	*/
 	
 	/// Calculating initial size of the buffer
@@ -35,16 +33,12 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	const u32 num_indices = INDICES_PER_CHUNK * chunkCacheSize;
 
 	//Placing the initial full span for open slots
-	//Initializing the span
 	m_open_spans.emplace_back(0, num_indices * sizeof(u32));	// [0 - byteLen)
-	
-	//Get device pointer
-	bs::Device* p_device = bs::asset_manager->getTextureMutable(0).getDevice();
 
 	//Creating the buffers
 	bs::vk::BufferDescription basicDescription
 	{
-		.dev = p_device,
+		.dev = bs::asset_manager->getTextureMutable(0).getDevice(),
 		.bufferType = bs::vk::BufferUsage::INDEX_BUFFER,
 		.size = num_indices * sizeof(u32),
 		.stride = sizeof(u32),
@@ -68,7 +62,7 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 
 ChunkMeshManager::~ChunkMeshManager()
 {
-
+	
 }
 
 void ChunkMeshManager::setRenderDistance(const u32 renderDistance)

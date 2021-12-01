@@ -15,3 +15,21 @@ const std::vector<bs::vec4>& createFullChunkMesh();
 
 //Get all the faces for this Chunk
 std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const Chunk& chunk);
+
+constexpr std::array<u32, 6> getIndicesFromFaceIndex(const u16 faceIndex)
+{
+	//The offset
+	const u32 baseIndex = faceIndex * 4;
+	//Indices order
+	constexpr std::array<u32, 6> indicesList
+	{
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	return std::array<u32, 6>
+	{{
+		baseIndex + indicesList[0], baseIndex + indicesList[1], baseIndex + indicesList[2],
+		baseIndex + indicesList[3], baseIndex + indicesList[4], baseIndex + indicesList[5]
+	}};
+}
