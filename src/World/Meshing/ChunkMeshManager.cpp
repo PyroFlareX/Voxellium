@@ -300,11 +300,12 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 	if(shouldThreadIndexBuilding)
 	{
 		Counter meshingCounter(0);
+		auto& jobSystem = bs::getJobSystem();
 
 		const auto numWorkers = drawInfo.faces.size() / facesWorkPerThread;
 		for(auto executionID = 0; executionID < numWorkers; executionID += 1)
 		{
-			jobSystem.schedule(jobSystem.createJob([&drawInfo, &mesh, executionID](Job j)
+			jobSystem.schedule(Job([&drawInfo, &mesh, executionID](Job j)
 			{
 				const u32 start = executionID * facesWorkPerThread;	//Starting Face
 				const u32 end = start + facesWorkPerThread;			//Ending Face
@@ -320,13 +321,13 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 						mesh.meshindicies[meshIndex + j] = indexArray[j];
 					}
 				}
-			}, nullptr, &meshingCounter));
+			}, meshingCounter), meshingCounter);
 		}
 
 		const u32 IndexRemaining = drawInfo.faces.size() - (drawInfo.faces.size() % facesWorkPerThread);
 		for(auto faceNum = IndexRemaining; faceNum < drawInfo.faces.size(); faceNum += 1)
 		{
-			const auto faceID = drawInfo.faces[faceNum].faceIndex;
+			const auto& faceID = drawInfo.faces[faceNum].faceIndex;
 			const auto meshIndex = faceNum * 6;
 
 			const std::array<u32, 6> indexArray = getIndicesFromFaceIndex(faceID);
@@ -335,7 +336,7 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 				mesh.meshindicies[meshIndex + j] = indexArray[j];
 			}
 		}
-		jobSystem.wait(0, false, &meshingCounter);
+		jobSystem.waitWithCounter(0, meshingCounter);
 	}
 	else
 	{

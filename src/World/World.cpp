@@ -28,7 +28,7 @@ World::World()	:	m_mesh_manager(*this, 2)
 
 World::~World()
 {
-	while(jobSystem.backgroundJobs() > 0)	{	}
+	bs::getJobSystem().waitBackground(0);
 }
 
 block_t World::getBlockAt(const pos_xyz& world_pos) const

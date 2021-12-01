@@ -57,8 +57,6 @@ GeneralRenderer::GeneralRenderer(bs::Device* mainDevice, VkRenderPass& rpass, Vk
 	
 	graphicsPipelineBuilder.build();
 	graphicsPipelineBuilder.getResults(m_genericPipeline, m_pipelineLayout);
-
-	jobSystem.wait();
 }
 
 GeneralRenderer::~GeneralRenderer()

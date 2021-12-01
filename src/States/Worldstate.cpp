@@ -12,8 +12,8 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 
 	std::cout << "Generating Chunks and Meshes\n";
 
-	const auto currentJobs = jobSystem.remainingJobs();
-	u32 jobsScheduled = 0;
+	auto& jobSystem = bs::getJobSystem();
+	Counter chunk_gen_counter(0);
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -23,7 +23,7 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 			{
 				const pos_xyz chunk_pos(chunk_x, chunk_y, chunk_z);
 				auto* world_ptr = &m_world;
-				const auto generateChunk = jobSystem.createJob([world_ptr, chunk_pos](Job j)
+				const Job generateChunk([world_ptr, chunk_pos](Job j)
 				{
 					auto& chunk = world_ptr->getChunkAt(chunk_pos);
 					for(auto z = 0; z < CHUNK_SIZE; z+=1)
@@ -45,14 +45,13 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 					const bool result = world_ptr->getMeshManager().cacheChunk(chunk);
 
 					std::cout << "Caching Chunk result: " << (result ? "true" : "false") << "\n";
-				});
-				jobSystem.schedule(generateChunk);
-				jobsScheduled += 1;
+				}, chunk_gen_counter);
+				jobSystem.schedule(generateChunk, chunk_gen_counter);
 			}
 		}
 	}
 
-	jobSystem.wait(currentJobs);
+	jobSystem.waitWithCounter(0, chunk_gen_counter);
 }
 
 Worldstate::~Worldstate()

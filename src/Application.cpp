@@ -49,27 +49,19 @@ void Application::RunLoop()
 	m_context->setIcon(icon);
 	
 //===================================================================================	
-	
-	//Originally for a render buffer to be copied to swapchain framebuffer
-	//bs::vk::RenderTargetFramebuffer framebuffer(*m_device, m_renderer->getDefaultRenderPass(), winSize);
-
-	//Framebuffer data, pass the vulkan stuff into the renderdata layout
-	// framebufdata[0].handle = m_context->m_scdetails.swapChainFramebuffers;
-	// framebufdata[0].imgView = m_context->m_scdetails.swapChainImageViews.at(0);
-	// framebufdata[0].size = winSize;
-	
-	//.The handle to the swap chain image to render to
+		
+	//The handle to the swap chain image to render to
 	m_renderFramebuffer.handle = m_context->m_scdetails.swapChainFramebuffers;
 	m_renderFramebuffer.imgView = m_context->m_scdetails.swapChainImageViews.at(0);
 	m_renderFramebuffer.size = winSize;
-	
-	//std::cout << "framebufdata handles: [size, handle] " << framebufdata[0].handle.size() << " \n";
 
 //===================================================================================
 
 	//Main Loop
 	Input::window = m_context->getContext();
 	Input::setupInput();
+
+	auto& jobSystem = bs::getJobSystem();
 
 	//Main loop running
 	while(m_context->isOpen() && !m_states.empty() && !shouldClose)
@@ -92,36 +84,33 @@ void Application::RunLoop()
 
 		current.lateUpdate(m_camera);
 		m_camera.update();
-		jobSystem.wait();
+		jobSystem.wait(0);
 
 
 		/// Draw objects from gamestate
 		current.render(*m_renderer);
-		jobSystem.wait();
+		jobSystem.wait(0);
 
 		/// Render
 		m_renderer->render(m_camera);
 
 		/// Submitting the data to the GPU and actually drawing/updating display
 		m_renderer->finish(m_renderFramebuffer, frames % m_renderFramebuffer.handle.size());
-		jobSystem.wait();
+		jobSystem.wait(0);
 		m_context->update();
-
 		
 		/// Handle Window Events
 		t += dt;
 		frames++;
-		if (t >= 1)
+		if (t >= 1.0)
 		{
-			io.DeltaTime = dt;
-			io.Framerate = (float)frames;
-			
 			//std::cout << frames << " per sec\n";
 			//std::cout << dt * 1000 << " ms\n";
-
 			//printf("Player Pos: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.pos.x, m_camera.pos.y, m_camera.pos.z);
 			//printf("Player Rot: X:%0.3f, Y:%0.3f, Z:%0.3f\n", m_camera.rot.x, m_camera.rot.y, m_camera.rot.z);
 
+			io.DeltaTime = dt;
+			io.Framerate = (float)frames;
 			t = 0;
 			frames = 0;
 		}
@@ -131,11 +120,10 @@ void Application::RunLoop()
 	}
 	m_context->close();
 
-	jobSystem.wait();
+	jobSystem.wait(0);
 
 	m_states.clear();
 }
-
 
 void Application::popState()
 {

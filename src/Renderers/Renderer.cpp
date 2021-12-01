@@ -173,13 +173,14 @@ void Renderer::render(Camera& cam)
 	m_UIRenderer->bakeImGui();
 
 	//Main Pass
-	jobSystem.wait();
+	// auto& jobSystem = bs::getJobSystem();
+	// jobSystem.wait(0);
 
 	m_generalRenderer->render(cam);
 	m_UIRenderer->render();
 	m_chunkRenderer->buildRenderCommands();
 
-	jobSystem.wait();
+	// jobSystem.wait();
 }
 
 void Renderer::finish(bs::vk::FramebufferData& fbo, int index)
