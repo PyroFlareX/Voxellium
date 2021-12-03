@@ -60,10 +60,10 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	texture_storage_buffer->allocateBuffer();
 }
 
-ChunkMeshManager::~ChunkMeshManager()
+/*ChunkMeshManager::~ChunkMeshManager()
 {
 	
-}
+}*/
 
 void ChunkMeshManager::setRenderDistance(const u32 renderDistance)
 {
@@ -293,13 +293,13 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 
 	if(shouldThreadIndexBuilding)
 	{
-		Counter meshingCounter(0);
+		Counter meshingCounter{0};
 		auto& jobSystem = bs::getJobSystem();
 
 		const auto numWorkers = drawInfo.faces.size() / facesWorkPerThread;
 		for(auto executionID = 0; executionID < numWorkers; executionID += 1)
 		{
-			jobSystem.schedule(Job([&drawInfo, &mesh, executionID](Job j)
+			Job index_build_job([&drawInfo, &mesh, executionID](Job j)
 			{
 				const u32 start = executionID * facesWorkPerThread;	//Starting Face
 				const u32 end = start + facesWorkPerThread;			//Ending Face
@@ -315,10 +315,12 @@ const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDr
 						mesh.meshindicies[meshIndex + j] = indexArray[j];
 					}
 				}
-			}, meshingCounter), meshingCounter);
+			}, meshingCounter);
+
+			jobSystem.schedule(index_build_job, meshingCounter);
 		}
 
-		const u32 IndexRemaining = drawInfo.faces.size() - (drawInfo.faces.size() % facesWorkPerThread);
+		const u32 IndexRemaining = numWorkers * facesWorkPerThread; //drawInfo.faces.size() - (drawInfo.faces.size() % facesWorkPerThread);
 		for(auto faceNum = IndexRemaining; faceNum < drawInfo.faces.size(); faceNum += 1)
 		{
 			const auto& faceID = drawInfo.faces[faceNum].faceIndex;

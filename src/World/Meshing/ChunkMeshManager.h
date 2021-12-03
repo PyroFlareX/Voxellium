@@ -37,7 +37,7 @@ class ChunkMeshManager
 public:
 	//The world is used for mesh building, renderDistance is for the buffer allocation size
 	ChunkMeshManager(const World& world, const u32 renderDistance);
-	~ChunkMeshManager();
+	~ChunkMeshManager() = default;
 
 	//Set the render distance in number of chunks, as a radius around the player
 	void setRenderDistance(const u32 renderDistance);
@@ -103,9 +103,9 @@ private:
 	// @TODO: Fix the const functions or implement this in a slightly different way somehow so that
 	//		the const member functions can shared_lock these too maybe?
 	//The Various mutex(es)
-	std::shared_mutex m_slot_lock;
-	std::shared_mutex m_drop_lock;
-	std::shared_mutex m_cache_lock;
+	mutable std::shared_mutex m_slot_lock;
+	mutable std::shared_mutex m_drop_lock;
+	mutable std::shared_mutex m_cache_lock;
 
 	//Stores the open areas of the buffer
 	struct span

@@ -128,7 +128,7 @@ bs::Mesh generateMeshFor(const World& world, Chunk& chunk)
  * All front, back, top, bottom, left, then right
  * For the x, then y, then z
  * So:
- * 0-4096 is the front faces
+ * [0-4096) is the front faces
  * 
 **/
 //Get the indices of the block face for block `blockCoord` for the `side`
@@ -167,8 +167,10 @@ constexpr std::array<u16, 6> getIndicesFor()
 	//Pretty sure its=>: index(blockCoord) * 4
 	constexpr u16 baseIndex = (toIndex(blockCoord) * 4) + indexOffsetThing;
 
-	return std::array<u16, 6> (baseIndex + front[0], baseIndex + front[1], baseIndex + front[2],
-						baseIndex + front[3], baseIndex + front[4], baseIndex + front[5]);
+	return std::array<u16, 6> {{
+		baseIndex + front[0], baseIndex + front[1], baseIndex + front[2],
+		baseIndex + front[3], baseIndex + front[4], baseIndex + front[5]
+	}};
 }
 
 const std::vector<bs::vec4>& createFullChunkMesh()
