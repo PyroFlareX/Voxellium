@@ -10,7 +10,8 @@ constexpr auto CHUNK_VOLUME = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 #include <Types/BaseInheritables.h>
 #include "AliasTypes.h"
 
-struct ChunkDrawInfo
+struct alignas(std::hardware_constructive_interference_size) 
+ChunkDrawInfo
 {
 	pos_xyz chunk_pos;
 	struct Face
@@ -21,10 +22,11 @@ struct ChunkDrawInfo
 
 	std::vector<Face> faces;
 
-	u32 numIndices;
+	u16 numIndices;
 	u32 startOffset;
 	u32 instanceID;
-};
+};	//64 bytes~ aligned, for cache | 56 bytes without align
+// constexpr auto drawinfosize = sizeof(ChunkDrawInfo);
 
 struct ChunkInstanceData
 {

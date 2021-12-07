@@ -44,7 +44,7 @@ public:
 
 	//Tries to cache the chunk passed
 	//Returns true if successful, false otherwise (like if there is no more room in the buffer)
-	// 		@TODO: TRY TO MAKE THIS BE THREAD SAFE
+	//Validity is checked within the function
 	bool cacheChunk(const Chunk& chunk);
 
 	//Marks the passed chunk as removable from the list
@@ -70,56 +70,51 @@ public:
 	const std::vector<Chunk::ChunkMesh>& getChunkDrawData() const;	
 
 private:
-	///Private Member Functions
-
+	using indexType = u32;
 	//Add the given chunk to the buffer (might add a location offset argument)
 	void addChunkToBuffer(const Chunk::ChunkMesh chunk);
 
+	//Returns whether the buffer should be condensed
+	bool shouldCondense() const;
+	//Return whether the buffers should be reallocated and remade
+	bool shouldReallocate() const;
+	
+	//Returns the number of bytes used in the buffer
+	size_t numBytesOfCachedChunks() const;
+
 	//Compresses and realigns the space and offsets within the buffer
 	void condenseBuffer();
-
+	//Reallocate and clear all the existing data in the buffers
 	void reallocateBuffers();
 
 	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
 
-	struct IndexMesh
-	{
-		std::vector<u32> meshindicies;
-	};
+	using IndexMesh = std::vector<indexType>;
 	const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
-
-	i64 findOpenSlot(const u32 data_length) const;
-	bool reserveSlot(const u32 start, const u32 data_length);
-	u32 reserveOpenSlot(const u32 data_length);
-
-	///Member variables
+	
+	bool isMarkedDroppable(const pos_xyz chunk_pos) const;
 
 	//World Ref
 	const World& m_world;
 
 	//Render Distance
 	u32 m_renderDistance;
+	
+	//Chunk Draw Info
+	std::vector<Chunk::ChunkMesh> m_chunkInfo;
+	//Use like a GC
+	//Maybe make a MPMC or otherwise lockless safe queue?
+	std::vector<pos_xyz> m_droppableChunks;
 
-	// @TODO: Fix the const functions or implement this in a slightly different way somehow so that
-	//		the const member functions can shared_lock these too maybe?
-	//The Various mutex(es)
+	//Stores the open areas of the buffer
+	std::vector<std::span<indexType>> m_open_spans;
+	std::span<indexType> m_parent_span;
+
+	std::span<indexType> reserveSlot(u32 indicesCount);
+
+	//The Various mutex(es) and counters
 	mutable std::shared_mutex m_slot_lock;
 	mutable std::shared_mutex m_drop_lock;
 	mutable std::shared_mutex m_cache_lock;
-
-	//Stores the open areas of the buffer
-	struct span
-	{
-		u32 start;
-		u32 length;
-	};
-	std::vector<span> m_open_spans;
-
-	//The actively drawn chunks
-	std::vector<pos_xyz> m_activeChunks;
-	//Use like a GC
-	std::vector<pos_xyz> m_droppableChunks;
-
-	//Chunk Draw Info
-	std::vector<Chunk::ChunkMesh> m_chunk_draw_data;
+	Counter m_failedAllocationsCounter;
 };

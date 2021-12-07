@@ -1,17 +1,19 @@
 #include "ChunkMeshManager.h"
 
+#include <span>
+
 #include "MeshingData.h"
 #include <Engine.h>
 
 #include "../World.h"
 
 //Names of buffers for asset manager
-const std::string chunk_buffer_name("chunk_indices");
+const std::string index_buffer_name("chunk_indices");
 const std::string instance_buffer_name("chunk_instance_data");
 const std::string texture_storage_buffer_name("chunk_texture_data");
 
 ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)	:	m_world(world), m_renderDistance(renderDistance),
-		m_open_spans({}), m_chunk_draw_data({}), m_activeChunks({}), m_droppableChunks({})
+		m_open_spans({}), m_chunkInfo({}), m_droppableChunks({}), m_failedAllocationsCounter{0}
 {
 	/**
 	 * Stuff that should happen:
@@ -33,19 +35,19 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	const u32 num_indices = INDICES_PER_CHUNK * chunkCacheSize;
 
 	//Placing the initial full span for open slots
-	m_open_spans.emplace_back(0, num_indices * sizeof(u32));	// [0 - byteLen)
+	//m_open_spans.emplace_back(0, num_indices * sizeof(u32));	// [0 - byteLen)
 
 	//Creating the buffers
 	bs::vk::BufferDescription basicDescription
 	{
 		.dev = bs::asset_manager->getTextureMutable(0).getDevice(),
 		.bufferType = bs::vk::BufferUsage::INDEX_BUFFER,
-		.size = num_indices * sizeof(u32),
-		.stride = sizeof(u32),
+		.size = num_indices * sizeof(indexType),
+		.stride = sizeof(indexType),
 	};
 
 	//Chunk Index Buffer
-	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), chunk_buffer_name);
+	bs::asset_manager->addBuffer(std::make_shared<bs::vk::Buffer>(basicDescription), index_buffer_name);
 
 	basicDescription.bufferType = bs::vk::BufferUsage::VERTEX_BUFFER;
 	basicDescription.stride = sizeof(ChunkInstanceData);
@@ -85,30 +87,29 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 
 	//Independent Call, this is expensive however
 	auto drawInfo = std::make_shared<ChunkDrawInfo>(createDrawInfoFromChunk(chunk));
-	const u32 data_length = drawInfo->numIndices * sizeof(u32);
 
-	//See if a slot can be found for it
-	if(findOpenSlot(data_length) < 0)
+	//This mutates state if successful
+	const auto slot = reserveSlot(drawInfo->numIndices);
+
+	//Checks if the allocation failed
+	if(slot.empty())
 	{
-		//Do a check to see if this logically *should* happen
-		// @TODO: Have the check, and reconfigure and condense buffers if necessary
-
-		//The caching failed
-		// std::cout << "Could not find space in index array.\n";
+		m_failedAllocationsCounter++;
 		return false;
 	}
 
 	//After this, safe syncronization must happen, because the state is mutated
 
-	//Get the offset for the indices
-	drawInfo->startOffset = reserveOpenSlot(data_length);
+	//Get the byte offset for the indices
+	drawInfo->startOffset = (slot.data() - m_parent_span.data());
 	
-	//Stored buffer arrays/cache
-	std::unique_lock<std::shared_mutex> g_array_lock(m_cache_lock);
-	drawInfo->instanceID = m_activeChunks.size(); //last part filled, chunk can be added to buffer now
+	//Store the chunk info and get the instance for the data; locked because changing vector
+	std::unique_lock<std::shared_mutex> g_drawdata(m_cache_lock);
+	
+	drawInfo->instanceID = m_chunkInfo.size(); //Last part filled, chunk can be added to buffer now
+	m_chunkInfo.push_back(drawInfo);
 
-	m_activeChunks.emplace_back(chunk.getChunkPos());
-	m_chunk_draw_data.emplace_back(drawInfo);
+	g_drawdata.unlock();
 
 	//Add chunk into the buffers
 	//This is can be called from multiple threads if the args don't have overlapping data
@@ -131,29 +132,24 @@ void ChunkMeshManager::canDrop(const Chunk& chunk)
 
 bool ChunkMeshManager::isChunkCached(const pos_xyz chunkPosition) const
 {
-	// @TODO: evaluate the performance impact of these mutexes
-
-	//For the droppable chunk section only
-	// std::shared_lock<std::shared_mutex> g_slot(m_drop_lock);
-	for(const auto& chunk : m_droppableChunks)
+	//Return false is the chunk is not cached
+	if(isMarkedDroppable(chunkPosition))
 	{
-		if(chunk == chunkPosition)
-		{
-			return false;
-		}
+		return false;
 	}
 
-	//For the active chunk section only
-	// std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
-	for(const auto& chunk : m_activeChunks)
+	//For the active chunk section only, checks list
+
+	// @TODO: evaluate the performance impact of the mutexes
+	// std::shared_lock<std::shared_mutex> g_cache_slot(m_cache_lock);
+	for(const auto& chunk : m_chunkInfo)
 	{
-		if(chunk == chunkPosition)
+		if(chunk->chunk_pos == chunkPosition)
 		{
 			return true;
 		}
 	}
 
-	//Chunk is NOT cached
 	return false;
 }
 
@@ -164,25 +160,23 @@ bool ChunkMeshManager::isChunkCached(const Chunk& chunk) const
 
 u32 ChunkMeshManager::getNumChunks() const
 {
-	//I don't think a shared lock is needed for this, since it's a 'safe' function according to the spec
-	//std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
-	return m_activeChunks.size();
+	return m_chunkInfo.size();
 }
 
 const std::vector<Chunk::ChunkMesh>& ChunkMeshManager::getChunkDrawData() const
 {
 	// std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
-	return m_chunk_draw_data;
+	return m_chunkInfo;
 }
 
 void ChunkMeshManager::addChunkToBuffer(const Chunk::ChunkMesh chunk)
 {
-	//Build the index mesh
+	//Build the index mesh, and add it to the index buffer
+	//Can be put as a job?
 	const IndexMesh indexMesh = buildIndexMesh(*chunk);
 
-	//Add to index buffer
-	auto index_buffer = bs::asset_manager->getBuffer(chunk_buffer_name);
-	index_buffer->writeBuffer(indexMesh.meshindicies.data(), chunk->numIndices * sizeof(u32), chunk->startOffset);
+	auto index_buffer = bs::asset_manager->getBuffer(index_buffer_name);
+	index_buffer->writeBuffer(indexMesh.data(), chunk->numIndices * sizeof(indexType), chunk->startOffset);
 
 	//Add to instance buffer
 	auto instance_buffer = bs::asset_manager->getBuffer(instance_buffer_name);
@@ -243,6 +237,68 @@ void ChunkMeshManager::addChunkToBuffer(const Chunk::ChunkMesh chunk)
 	
 }
 
+bool ChunkMeshManager::shouldCondense() const
+{
+	bool condense = false;
+	//If more than 4 failed allocations
+	if(m_failedAllocationsCounter.load() > 4)
+	{
+		condense = true;
+	}
+
+	//If there is sufficient droppable data
+	u32 freedIndices = 0;
+	for(const auto chunks : m_chunkInfo)
+	{
+		if(isMarkedDroppable(chunks->chunk_pos))
+		{
+			freedIndices += chunks->numIndices;
+		}
+	}
+	constexpr u32 MIN_DROPPABLE_INDICIES = 100;	//Arbitrary
+	if(freedIndices >= MIN_DROPPABLE_INDICIES)
+	{
+		condense = true;
+	}
+	return condense;
+}
+
+bool ChunkMeshManager::shouldReallocate() const
+{
+	//6 indicies per quad	|	num bytes per index	|	16 Faces (arbitrary)
+	constexpr auto REALLOCATION_DIFFERENCE = 6 * sizeof(indexType) * 16;
+
+	//One-sixth more | 16.66% more | should avoid using tbh at large sizes, only on the low ends
+	constexpr auto REALLOCATION_MULTIPLIER = 1 + (1.0f / 6.0f);
+
+	//If more than 4 failed allocations
+	if(m_failedAllocationsCounter.load() > 4)
+	{	//Check other conditions for whether it is necessary for reallocation
+		const auto max_size = m_parent_span.size_bytes();
+		const auto currentUsage = numBytesOfCachedChunks();
+
+		const bool sum_condition = (currentUsage + REALLOCATION_DIFFERENCE >= max_size);
+		const bool percent_condition = (currentUsage * REALLOCATION_MULTIPLIER >= max_size);
+
+		//If either condition is met, then reallocate
+		return sum_condition || percent_condition;
+	}
+	else
+	{	//Otherwise, no need to extra work for checks, since nothing is failing
+		return false;
+	}
+}
+
+size_t ChunkMeshManager::numBytesOfCachedChunks() const
+{
+	size_t bytes = 0;
+	for(const auto& chunks : m_chunkInfo)
+	{
+		bytes += chunks->numIndices * sizeof(indexType);
+	}
+	return bytes;
+}
+
 void ChunkMeshManager::condenseBuffer()
 {
 	//Shift the contents of the buffer around to maximize space
@@ -255,13 +311,20 @@ void ChunkMeshManager::condenseBuffer()
 
 void ChunkMeshManager::reallocateBuffers()
 {
-	//Lock EVERYTHING
-
 	// @TODO: actually implement lol
 	throw std::runtime_error("Not yet implemented!\n");
 
-	//Set new space requirements for buffers
-	//Allocate them (again ig)
+	///Lock EVERYTHING [Access to buffers, access to slots]
+	std::unique_lock<std::shared_mutex> g_cache(m_cache_lock, std::defer_lock);
+	std::unique_lock<std::shared_mutex> g_slots(m_slot_lock, std::defer_lock);
+
+	std::scoped_lock g_lock(g_cache, g_slots);
+
+	///Set new space requirements for buffers
+	//Allocate them
+	auto index_buffer = bs::asset_manager->getBuffer(index_buffer_name);
+	const auto oldSize = index_buffer->getSize();
+
 
 	//Update the descriptor set for the storage buffer
 	//	(I think) (Reasoning being the old VkBuffer was destroyed, the new one is a different handle/"pointer")
@@ -275,7 +338,10 @@ ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) cons
 	//THIS IS EXPENSIVE!!!
 	c_info.faces = generateFacesForChunk(m_world, chunk);
 	c_info.numIndices = c_info.faces.size() * 6;
+
+	//These are initialized, but ARE NOT VALID TO USE!!!!
 	c_info.startOffset = 0;
+	c_info.instanceID = 0;
 
 	return c_info;
 }
@@ -283,146 +349,86 @@ ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) cons
 const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo& drawInfo) const
 {
 	IndexMesh mesh;
-	mesh.meshindicies.resize(drawInfo.faces.size() * 6);
+	mesh.resize(drawInfo.faces.size() * 6); // OR: mesh.resize(drawInfo->numIndices);
 
-	constexpr auto WORKGROUP_SIZE = 32;
+	constexpr u32 facesWorkPerJob = 32;
 
-	//32 per thread, so if 1.5 of a thread, then parallelize
-	constexpr u32 facesWorkPerThread = WORKGROUP_SIZE;
-	const bool shouldThreadIndexBuilding = (drawInfo.faces.size() >= (facesWorkPerThread * 1.5f));
+	Counter meshingCounter{0};
+	auto& jobSystem = bs::getJobSystem();
 
-	if(shouldThreadIndexBuilding)
+	const auto numWorkers = drawInfo.faces.size() / facesWorkPerJob;
+	for(auto executionID = 0; executionID < numWorkers; executionID += 1)
 	{
-		Counter meshingCounter{0};
-		auto& jobSystem = bs::getJobSystem();
-
-		const auto numWorkers = drawInfo.faces.size() / facesWorkPerThread;
-		for(auto executionID = 0; executionID < numWorkers; executionID += 1)
+		const Job index_build_job([&drawInfo, &mesh, executionID](Job j)
 		{
-			Job index_build_job([&drawInfo, &mesh, executionID](Job j)
-			{
-				const u32 start = executionID * facesWorkPerThread;	//Starting Face
-				const u32 end = start + facesWorkPerThread;			//Ending Face
+			const u32 start = executionID * facesWorkPerJob;	//Starting Face
+			const u32 end = start + facesWorkPerJob;			//Ending Face
 
-				for(auto i = start; i < end; i += 1)
+			for(auto i = start; i < end; i += 1)
+			{
+				const u16 faceID = drawInfo.faces[i].faceIndex;
+				const u32 meshIndex = i * 6;
+				const auto indexArray = getIndicesFromFaceIndex(faceID);
+				for(auto j = 0; j < indexArray.size(); j += 1)
 				{
-					const u16 faceID = drawInfo.faces[i].faceIndex;
-					const u32 meshIndex = i * 6;
-
-					const auto indexArray = getIndicesFromFaceIndex(faceID);
-					for(auto j = 0; j < indexArray.size(); j += 1)
-					{
-						mesh.meshindicies[meshIndex + j] = indexArray[j];
-					}
+					mesh[meshIndex + j] = indexArray[j];
 				}
-			}, meshingCounter);
-
-			jobSystem.schedule(index_build_job, meshingCounter);
-		}
-
-		const u32 IndexRemaining = numWorkers * facesWorkPerThread; //drawInfo.faces.size() - (drawInfo.faces.size() % facesWorkPerThread);
-		for(auto faceNum = IndexRemaining; faceNum < drawInfo.faces.size(); faceNum += 1)
-		{
-			const auto& faceID = drawInfo.faces[faceNum].faceIndex;
-			const auto meshIndex = faceNum * 6;
-
-			const std::array<u32, 6> indexArray = getIndicesFromFaceIndex(faceID);
-			for(auto j = 0; j < indexArray.size(); j += 1)
-			{
-				mesh.meshindicies[meshIndex + j] = indexArray[j];
 			}
-		}
-		jobSystem.waitWithCounter(0, meshingCounter);
+		}, meshingCounter);
+
+		jobSystem.schedule(index_build_job, meshingCounter);
 	}
-	else
+
+	const u32 indexRemaining = numWorkers * facesWorkPerJob;
+	for(auto faceNum = indexRemaining; faceNum < drawInfo.faces.size(); faceNum += 1)
 	{
-		mesh.meshindicies.clear();
-		for(const auto& face : drawInfo.faces)	// [0, faces.size())
+		const auto& faceID = drawInfo.faces[faceNum].faceIndex;
+		const auto meshIndex = faceNum * 6;
+
+		const std::array<u32, 6> indexArray = getIndicesFromFaceIndex(faceID);
+		for(auto j = 0; j < indexArray.size(); j += 1)
 		{
-			const auto indices = getIndicesFromFaceIndex(face.faceIndex);
-			for(const auto& index : indices)	//[0, 6)
-			{
-				mesh.meshindicies.emplace_back(index);
-			}
-		}	//Overall does this: //[0, faces.size() * 6)
+			mesh[meshIndex + j] = indexArray[j];
+		}
 	}
+	jobSystem.waitWithCounter(0, meshingCounter);
 
 	return mesh;
 }
 
-i64 ChunkMeshManager::findOpenSlot(const u32 data_length) const
+bool ChunkMeshManager::isMarkedDroppable(const pos_xyz chunk_pos) const
 {
-	// std::shared_lock<std::shared_mutex> g_slot(m_slot_lock);
-	
-	for(const auto& freeSpace : m_open_spans)
+	std::shared_lock<std::shared_mutex> g_drop_slot(m_drop_lock);
+	for(const auto& chunk : m_droppableChunks)
 	{
-		if(freeSpace.length >= data_length)
+		if(chunk == chunk_pos)
 		{
-			return freeSpace.start;
-		}
-	}
-	return -1;
-}
-
-bool ChunkMeshManager::reserveSlot(const u32 start, const u32 data_length)
-{
-	std::unique_lock<std::shared_mutex> g_slot(m_slot_lock);
-
-	const u32 end = start + data_length;
-	for(auto& freeSpace : m_open_spans)
-	{
-		const u32 spaceStart = freeSpace.start;
-		const u32 spaceEnd = spaceStart + freeSpace.length;
-		if(spaceStart <= start && spaceEnd >= end)
-		{
-			//Change the space in the buffer
-			if(freeSpace.start == start)
-			{
-				//If the buffer begins are the same
-				freeSpace.start = end;
-				freeSpace.length = spaceEnd - end;
-			}
-			else
-			{
-				//start is > than spaceStart
-				//The reservation is in the middle of this block, so it must be spliced into front and back
-				const span front
-				{
-					.start = freeSpace.start,
-					.length = start - freeSpace.start,	//length is the difference between alloc start to OG start
-				};
-				const span back
-				{
-					.start = end,
-					.length = spaceEnd - end, //length is distance from far end to alloc end
-				};
-
-				freeSpace = front;
-				m_open_spans.emplace_back(back);
-			}
 			return true;
 		}
 	}
 	return false;
 }
 
-u32 ChunkMeshManager::reserveOpenSlot(const u32 data_length)
+std::span<ChunkMeshManager::indexType> ChunkMeshManager::reserveSlot(u32 indicesCount)
 {
+	//@TODO: IMPORTANT!!!
+	//		Try to find a way to do this lockless (atomics or otherwise, must be safe)
+	
 	std::unique_lock<std::shared_mutex> g_slot(m_slot_lock);
-
-	for(auto& freeSpace : m_open_spans)
+	//Find out if there is space
+	for(auto& span : m_open_spans)
 	{
-		if(freeSpace.length >= data_length)
+		if(span.size() >= indicesCount)
 		{
-			const auto start = freeSpace.start;
-			freeSpace.start = start + data_length;
-			freeSpace.length -= data_length;
+			auto allocatedSpan = span.first(indicesCount);
 
-			return start;
+			//Modify the span	[maybe swap but probably not, trivially copyable after all]
+			span = span.last(span.size() - indicesCount);
+
+			return allocatedSpan;
 		}
 	}
-	
-	throw std::runtime_error("Failed to reserve an open slot while supposedly guarunteed!!!");
 
-	return -1;
+	//If the span can't be achieved, return an empty span
+	return m_parent_span.subspan(0, 0);
 }
