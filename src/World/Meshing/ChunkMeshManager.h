@@ -3,6 +3,9 @@
 #include "../Types/Chunk.h"
 
 #include <shared_mutex>
+#include <span>
+
+#include <JobSystem/JobSystem.h>
 
 class World;
 
@@ -71,8 +74,10 @@ public:
 
 private:
 	using indexType = u32;
-	//Add the given chunk to the buffer (might add a location offset argument)
-	void addChunkToBuffer(const Chunk::ChunkMesh chunk);
+
+	//Add the given chunk to the buffer
+	static void addChunkToBuffer(const Chunk::ChunkMesh chunk);
+	Counter m_chunkBufferingCounter;
 
 	//Returns whether the buffer should be condensed
 	bool shouldCondense() const;
@@ -90,7 +95,7 @@ private:
 	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
 
 	using IndexMesh = std::vector<indexType>;
-	const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo) const;
+	static const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo);
 	
 	bool isMarkedDroppable(const pos_xyz chunk_pos) const;
 
@@ -113,8 +118,8 @@ private:
 	std::span<indexType> reserveSlot(u32 indicesCount);
 
 	//The Various mutex(es) and counters
-	mutable std::shared_mutex m_slot_lock;
-	mutable std::shared_mutex m_drop_lock;
-	mutable std::shared_mutex m_cache_lock;
+	mutable std::shared_mutex m_slot_lock;	//For the buffer spans sub allocations
+	mutable std::shared_mutex m_drop_lock;	//For Drop lists
+	mutable std::shared_mutex m_cache_lock;	//For drawinfo
 	Counter m_failedAllocationsCounter;
 };

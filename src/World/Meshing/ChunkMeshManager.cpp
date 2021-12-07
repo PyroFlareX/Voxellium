@@ -1,7 +1,5 @@
 #include "ChunkMeshManager.h"
 
-#include <span>
-
 #include "MeshingData.h"
 #include <Engine.h>
 
@@ -13,7 +11,7 @@ const std::string instance_buffer_name("chunk_instance_data");
 const std::string texture_storage_buffer_name("chunk_texture_data");
 
 ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)	:	m_world(world), m_renderDistance(renderDistance),
-		m_open_spans({}), m_chunkInfo({}), m_droppableChunks({}), m_failedAllocationsCounter{0}
+		m_open_spans({}), m_chunkInfo({}), m_droppableChunks({}), m_failedAllocationsCounter(0), m_chunkBufferingCounter(0)
 {
 	/**
 	 * Stuff that should happen:
@@ -112,9 +110,8 @@ bool ChunkMeshManager::cacheChunk(const Chunk& chunk)
 	g_drawdata.unlock();
 
 	//Add chunk into the buffers
-	//This is can be called from multiple threads if the args don't have overlapping data
-	//Can be called asyncronously
-	addChunkToBuffer(drawInfo);
+	const Job bufferChunkData([drawInfo](Job j) { addChunkToBuffer(drawInfo); }, m_chunkBufferingCounter);
+	bs::getJobSystem().schedule(bufferChunkData, m_chunkBufferingCounter);
 
 	return true;
 }
@@ -141,7 +138,7 @@ bool ChunkMeshManager::isChunkCached(const pos_xyz chunkPosition) const
 	//For the active chunk section only, checks list
 
 	// @TODO: evaluate the performance impact of the mutexes
-	// std::shared_lock<std::shared_mutex> g_cache_slot(m_cache_lock);
+	std::shared_lock<std::shared_mutex> g_cache(m_cache_lock);
 	for(const auto& chunk : m_chunkInfo)
 	{
 		if(chunk->chunk_pos == chunkPosition)
@@ -166,6 +163,8 @@ u32 ChunkMeshManager::getNumChunks() const
 const std::vector<Chunk::ChunkMesh>& ChunkMeshManager::getChunkDrawData() const
 {
 	// std::shared_lock<std::shared_mutex> g_slot(m_cache_lock);
+	
+	bs::getJobSystem().waitWithCounter(0, m_chunkBufferingCounter);
 	return m_chunkInfo;
 }
 
@@ -301,12 +300,67 @@ size_t ChunkMeshManager::numBytesOfCachedChunks() const
 
 void ChunkMeshManager::condenseBuffer()
 {
-	//Shift the contents of the buffer around to maximize space
-	//Also FORCE drop all of the droppable chunks
-	//And reallocate the buffer if needed too
+	//Shift the contents of the buffer around to maximize space 
+	//	because the vulkan buffer is only guarunteed to be written, and might not be synced to read from, must regenerate indices
+	//Drops all of the droppable chunks
 
-	//@TODO: Implement this
-	throw std::runtime_error("Not yet implemented!\n");
+	std::vector<Chunk::ChunkMesh> savedDraws;
+	savedDraws.reserve(getNumChunks());
+
+	auto& jsys = bs::getJobSystem();
+
+	//Save only the non dropped chunks
+	std::shared_lock<std::shared_mutex> g_cache_read(m_cache_lock);
+	for(const auto& drawInfo : m_chunkInfo)
+	{
+		if(!isMarkedDroppable(drawInfo->chunk_pos))
+		{
+			savedDraws.push_back(drawInfo);
+		}
+	}
+	g_cache_read.unlock();
+
+	//Clear slots so they can be redone
+	std::unique_lock<std::shared_mutex> g_slots(m_slot_lock);
+	m_open_spans.clear();
+	m_open_spans.emplace_back(m_parent_span);
+	//First span
+	auto& span = m_open_spans[0];
+
+	std::unique_lock<std::shared_mutex> g_cache(m_cache_lock);
+	for(auto i = 0; i < savedDraws.size(); i += 1)
+	{
+		auto drawInfo = savedDraws[i];
+		drawInfo->instanceID = i;
+
+		//Because it was cleared before, it is GUARUNTEEABLE that ALL the
+		//	existing reservations can be redone without needing a success check
+
+		//Because the `reserveSlot` function locks the mutex that is already locked, have to do this manually
+		//Leave the remainder of the span
+		span = span.last(span.size() - drawInfo->numIndices);
+		drawInfo->startOffset = (span.data() - m_parent_span.data());
+
+		//Jobify the adding to buffer
+		const Job addToBuffer([drawInfo](Job j)
+		{
+			addChunkToBuffer(drawInfo);	
+		}, m_chunkBufferingCounter);
+		jsys.schedule(addToBuffer, m_chunkBufferingCounter);
+		
+	}
+	//Swap them after updating the infos, so the dropped list can be cleared whenever
+	m_chunkInfo.swap(savedDraws);
+
+	g_cache.unlock();
+	g_slots.unlock();
+
+	//Async this whenever (after the swap):
+	{
+		m_failedAllocationsCounter.store(0);
+		std::unique_lock<std::shared_mutex> g_drop_slot(m_drop_lock);
+		m_droppableChunks.clear();
+	}
 }
 
 void ChunkMeshManager::reallocateBuffers()
@@ -346,7 +400,7 @@ ChunkDrawInfo ChunkMeshManager::createDrawInfoFromChunk(const Chunk& chunk) cons
 	return c_info;
 }
 
-const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo& drawInfo) const
+const ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo& drawInfo)
 {
 	IndexMesh mesh;
 	mesh.resize(drawInfo.faces.size() * 6); // OR: mesh.resize(drawInfo->numIndices);
@@ -413,22 +467,19 @@ std::span<ChunkMeshManager::indexType> ChunkMeshManager::reserveSlot(u32 indices
 {
 	//@TODO: IMPORTANT!!!
 	//		Try to find a way to do this lockless (atomics or otherwise, must be safe)
-	
 	std::unique_lock<std::shared_mutex> g_slot(m_slot_lock);
 	//Find out if there is space
 	for(auto& span : m_open_spans)
 	{
 		if(span.size() >= indicesCount)
 		{
-			auto allocatedSpan = span.first(indicesCount);
+			const auto allocation = span.first(indicesCount);
 
-			//Modify the span	[maybe swap but probably not, trivially copyable after all]
+			//Modify the span
 			span = span.last(span.size() - indicesCount);
-
-			return allocatedSpan;
+			return allocation;
 		}
 	}
-
 	//If the span can't be achieved, return an empty span
 	return m_parent_span.subspan(0, 0);
 }

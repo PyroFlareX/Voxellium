@@ -21,10 +21,10 @@ ChunkDrawInfo
 	};
 
 	std::vector<Face> faces;
-
 	u16 numIndices;
-	u32 startOffset;
+
 	u32 instanceID;
+	u32 startOffset;
 };	//64 bytes~ aligned, for cache | 56 bytes without align
 // constexpr auto drawinfosize = sizeof(ChunkDrawInfo);
 
