@@ -1,13 +1,13 @@
 #pragma once
 #pragma warning (disable: 4267 4244 4005) // size_t to int conversion, to float conversion
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <cctype>
 #include <functional>
 #include <string>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 typedef uint8_t		u8;
 typedef uint16_t	u16;
@@ -38,7 +38,7 @@ namespace bs
 
 	typedef struct ray_t
 	{
-		vec3 origin;
+		vec3 start;
 		vec3 direction;
 	}	Ray;
 
@@ -73,7 +73,7 @@ namespace bs
 	};
 }
 
-//For hashing (e.g. usage in std::maps)
+//For hashing (usage in maps)
 namespace std
 {
 	//vec3

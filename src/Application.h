@@ -1,12 +1,10 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#pragma once
 
 #include <vector>
 #include <memory>
 
 #include <GPU/GPU.h>
 
-#include "Renderers/Renderer.h"
 #include "States/Basestate.h"
 #include "Camera.h"
 
@@ -25,45 +23,19 @@ public:
     //State Stuff
 
 	//Push a state to the back of the queue
-	void pushState(std::unique_ptr<Basestate> state)
-	{
-		m_states.emplace_back(std::move(state));
-	}
+	void pushState(std::unique_ptr<Basestate> state);
 
 	//Safe add
-	void pushBackState(std::unique_ptr<Basestate> state)
-	{
-		auto change = [&]()
-		{
-			/*
-			auto* current = m_states.back().release();
-			m_states.back() = (std::move(state));
-			m_states.emplace_back(std::unique_ptr<Basestate>(current));
-			*/
+	void pushBackState(std::unique_ptr<Basestate> state);
 
-			///Better version
-			m_states.emplace_back(std::move(state));
-			//Swap the back two
-			if(m_states.size() >= 2)
-			{
-				auto& secondToLast = m_states.at(m_states.size() - 2);
-				auto& last = m_states.back();
-
-				secondToLast.swap(last);
-			}
-		};
-		m_statechanges.emplace_back(change);
-	}
-
+	//Pop the state at the back
     void popState();
-    void handleEvents();
-	
-	void requestClose()
-	{
-		shouldClose = true;
-	}
 
-protected:
+	//Handle any window or other engine events, and does whatever needs to be fixed
+    void handleEvents();
+
+	//Ask for the application to be closed
+	void requestClose();
 
 private:
     std::unique_ptr<Basestate>& currentState();
@@ -86,6 +58,3 @@ private:
 
 	bool shouldClose;
 };
-
-
-#endif // APPLICATION_H
