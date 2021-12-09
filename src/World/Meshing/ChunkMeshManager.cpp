@@ -24,8 +24,8 @@ ChunkMeshManager::ChunkMeshManager(const World& world, const u32 renderDistance)
 	*/
 	
 	/// Calculating initial size of the buffer
-	constexpr auto INDICES_PER_CHUNK = 6 * CHUNK_AREA * 2; //Literally arbitrary
-	// @TODO: Write an actual algorithm for estimating this ^
+	constexpr auto INDICES_PER_CHUNK = 6 * CHUNK_AREA * 2;
+	// @TODO: Write an actual algorithm for estimating this
 
 	//This is a cylinder, 16 chunks tall, and a base with radius of m_renderDistance
 	//Maybe consider other geometries?

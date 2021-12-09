@@ -246,21 +246,31 @@ const std::vector<bs::vec4>& createFullChunkMesh()
 	return meshVerts;
 }
 
+#define PARALLEL_FACE_GENERATION 0
+
 std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const Chunk& chunk)
 {
-	//@TODO: Make a more parallelized version with the job system
-	//That can be optionally enabled
+	std::vector<ChunkDrawInfo::Face> facesList;
 
-	std::vector<ChunkDrawInfo::Face> faces;
+#if PARALLEL_FACE_GENERATION
+	//Could use an MPMC queue here instead of the facesList vector thing, but this already works,
+	//	and would move data to a vector anyway, so a perf gain is unknown
+	auto& jsys = bs::getJobSystem();
+	Counter generationCounter{ 0 };
+	//Faces vector for each job
+	std::vector<ChunkDrawInfo::Face> sideFaces[NUM_SIDES] = { {}, {}, {}, {}, {}, {} };
+	void* faceVectors[NUM_SIDES] = { &sideFaces[0], &sideFaces[1], &sideFaces[2], &sideFaces[3], &sideFaces[4], &sideFaces[5] };
+#endif
 
 	for(auto side = 0; side < NUM_SIDES; side += 1)
 	{
-		//Doing the sides
-		const u16 offset = NUM_FACES_PER_SIDE * side;
-		auto direction = FRONT;
+		pos_xyz direction = { 0, 0, 0 };
 
 		switch (side)
 		{
+		case 0:
+			direction = FRONT;
+			break;
 		case 1:
 			direction = BACK;
 			break;
@@ -276,15 +286,23 @@ std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const
 		case 5:
 			direction = RIGHT;
 			break;
-		default:
-			break;
 		}
 
-		for(u16 z = 0; z < CHUNK_SIZE; z+=1)
+#if PARALLEL_FACE_GENERATION
+		Job faceGen([side, direction, &chunk, &world](Job j) {
+		auto& faces = j.getReferenceAtIndex<std::vector<ChunkDrawInfo::Face>>(side);
+#else
+	auto& faces = facesList;
+#endif
+
+		//Doing the sides
+		const u16 offset = NUM_FACES_PER_SIDE * side;
+
+		for(u16 z = 0; z < CHUNK_SIZE; z += 1)
 		{
-			for(u16 y = 0; y < CHUNK_SIZE; y+=1)
+			for(u16 y = 0; y < CHUNK_SIZE; y += 1)
 			{
-				for(u16 x = 0; x < CHUNK_SIZE; x+=1)
+				for(u16 x = 0; x < CHUNK_SIZE; x += 1)
 				{
 					const pos_xyz coords(x, y, z);
 					const auto block = chunk.getBlockAt(coords);
@@ -305,19 +323,43 @@ std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const
 					//If the adjacent block is transparent, then add the face to the mesh
 					if(tempisTransparent(adjBlock))
 					{
-						u16 FaceIndex = toIndex(x, y, z) + offset;
+						const u16 faceIndex = toIndex(x, y, z) + offset;
 						faces.emplace_back(ChunkDrawInfo::Face
 						{
 							.textureID = (u16)0,
-							.faceIndex = FaceIndex,
+							.faceIndex = faceIndex,
 						});
 					}
 				}//x
 			}//y
 		}//z
+
+#if PARALLEL_FACE_GENERATION
+		}, faceVectors);
+		jsys.scheduleLowPriority(faceGen, generationCounter);		
+#endif
 	}//Sides
 
-	return faces;
+#if PARALLEL_FACE_GENERATION
+	//Wait to finish
+	jsys.waitWithCounter(0, generationCounter);
+
+	//Allocate/reserve sufficient space for the faces
+	facesList.resize(sideFaces[0].size() + sideFaces[1].size() + sideFaces[2].size() +
+					sideFaces[3].size() + sideFaces[4].size() + sideFaces[5].size());
+	
+	//Copy all the face data in each vector (memcpy resize is faster than emplace back loop right?)
+	size_t offsetBytes = 0;
+	for(auto i = 0; i < NUM_SIDES; i += 1)
+	{
+		const auto& faceVec = sideFaces[i];
+		const size_t numBytes = faceVec.size() * sizeof(ChunkDrawInfo::Face);
+		memcpy(facesList.data() + offsetBytes, faceVec.data(), numBytes);
+		offsetBytes += numBytes;
+	}
+#endif
+
+	return facesList;
 }
 
 constexpr static inline u16 toIndex(u16 x, u16 y, u16 z) noexcept
