@@ -1,12 +1,14 @@
-#ifndef Menustate_H
-#define Menustate_H
+#pragma once
 
 #include "../Application.h"
+
+#include "../Renderers/Renderer.h"
 
 class Menustate : public Basestate
 {
 public:
     Menustate(Application& app);
+    ~Menustate() override;
 
 	void createObject(bs::Transform& t, const std::string& name);
 	void removeObject(const std::string& name);
@@ -15,8 +17,6 @@ public:
     void update(float dt) override;
 	void lateUpdate(Camera& cam) override;
 	void render(Renderer& renderer) override;
-
-    ~Menustate() override;
 private:
 	std::vector<bs::GameObject> m_gameObjects;
 	
@@ -24,5 +24,3 @@ private:
 
 	bs::Transform m_camtransform;
 };
-
-#endif // Menustate_H
