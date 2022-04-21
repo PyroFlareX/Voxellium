@@ -40,7 +40,15 @@ namespace bs::vk
 	{
 	public:
 		Buffer(const BufferDescription bufdesc);
-		~Buffer();
+		Buffer(bs::Device* dev, const BufferUsage type, const u64 size, const void* data = nullptr, VmaMemoryUsage usage = VMA_MEMORY_USAGE_CPU_TO_GPU);
+		
+		Buffer(const Buffer&) = delete;
+		Buffer& operator=(const Buffer&) = delete;
+		
+		Buffer(Buffer&& rhs) noexcept;
+		Buffer& operator=(Buffer&& other) noexcept;
+
+		~Buffer() noexcept;
 
 		//For size of subtype
 		u64 getStride() const;
@@ -56,7 +64,7 @@ namespace bs::vk
 
 		//Upload Buffer to allocated space in vulkan memory, reallocates if needed
 		void allocateBuffer();
-		// Uses buf desc size, copies the data in ``data`` to the buffer
+		// Uses buf desc size, memcpy the data in ``data`` to the buffer
 		void writeBuffer(const void* data, u64 size = 0, u64 offset = 0);
 
 		//Obvious, deletes previous buffer if it is allocated
@@ -69,7 +77,14 @@ namespace bs::vk
 		void deleteBuffer();
 	private:
 		VkBuffer m_buffer;
-		BufferDescription m_desc;
 		VmaAllocation m_allocation;
+
+		bs::Device* m_device;
+		u64 m_size;
+		u64 m_stride;
+		BufferUsage m_buffer_type;
+		VmaMemoryUsage m_buffer_alloc_prop;
+
+		void* m_tptr;
 	};
 }

@@ -20,7 +20,7 @@ public:
 	void executeCommands(VkCommandBuffer cmd);
 
 	//Chunk Mesh Manager
-	const ChunkMeshManager* p_mesh_manager;
+	ChunkMeshManager* p_mesh_manager;
 private:
 	void generateChunkData();
 	static VertexInputDescription getChunkInputDescription();

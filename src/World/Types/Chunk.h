@@ -6,6 +6,7 @@ constexpr auto CHUNK_AREA = CHUNK_SIZE * CHUNK_SIZE;
 constexpr auto CHUNK_VOLUME = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 #include <array>
+#include <GPU/GPU.h>
 
 #include <Types/BaseInheritables.h>
 #include "AliasTypes.h"
@@ -25,6 +26,9 @@ ChunkDrawInfo
 
 	u32 instanceID;
 	u32 startOffset;
+
+	std::shared_ptr<bs::vk::Buffer> gpu_buffer;
+	
 };	//64 bytes~ aligned, for cache | 56 bytes without align
 // constexpr auto drawinfosize = sizeof(ChunkDrawInfo);
 

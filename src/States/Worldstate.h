@@ -4,6 +4,9 @@
 
 #include "../World/World.h"
 
+#include <Types/GameObject.h>
+#include <Input/Input.h>
+
 class Worldstate : public Basestate
 {
 public:

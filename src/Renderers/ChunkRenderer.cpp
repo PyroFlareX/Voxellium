@@ -147,7 +147,7 @@ void ChunkRenderer::buildRenderCommands()
 	vkCmdBindVertexBuffers(cmd, INSTANCE_INPUT_BINDING, 1, &bs::asset_manager->getBuffer(instance_buffer_name)->getAPIResource(), &offset);
 
 	//Bind Index Buffer Data
-	vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer(chunk_buffer_name)->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
+	//vkCmdBindIndexBuffer(cmd, bs::asset_manager->getBuffer(chunk_buffer_name)->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
 
 	//Temp section, replace when doing multidraw indirect, if at all
 
@@ -161,8 +161,11 @@ void ChunkRenderer::buildRenderCommands()
 			<< "Starting Byte Offset: " << chunk->startOffset << "\n";*/
 			
 		//From byte offset divided by stride to index offset
-		const u32 baseIndex = chunk->startOffset / sizeof(u32);
-		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, baseIndex, 0, chunk->instanceID);
+		// const u32 baseIndex = chunk->startOffset / sizeof(u32);
+
+		//Bind Index Buffer Data
+		vkCmdBindIndexBuffer(cmd, chunk->gpu_buffer->getAPIResource(), offset, VK_INDEX_TYPE_UINT32);
+		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, /*baseIndex*/0, 0, chunk->instanceID);
 	}
 
 	vkEndCommandBuffer(cmd);

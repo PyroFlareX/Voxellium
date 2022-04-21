@@ -3,7 +3,6 @@
 #include "../Types/Chunk.h"
 
 #include <shared_mutex>
-#include <span>
 
 #include <JobSystem/JobSystem.h>
 
@@ -39,11 +38,11 @@ class ChunkMeshManager
 {
 public:
 	//The world is used for mesh building, renderDistance is for the buffer allocation size
-	ChunkMeshManager(const World& world, const u32 renderDistance);
+	ChunkMeshManager(const World& world, u32 renderDistance);
 	~ChunkMeshManager() = default;
 
 	//Set the render distance in number of chunks, as a radius around the player
-	void setRenderDistance(const u32 renderDistance);
+	void setRenderDistance(u32 renderDistance);
 
 	//Tries to cache the chunk passed
 	//Returns true if successful, false otherwise (like if there is no more room in the buffer)
@@ -53,7 +52,7 @@ public:
 	//Marks the passed chunk as removable from the list
 	// The time of removal is arbitrary after this is called
 	// Thread safe
-	void canDrop(const pos_xyz chunkPosition);
+	void canDrop(pos_xyz chunkPosition);
 	//Marks the passed chunk as removable from the list
 	// The time of removal is arbitrary after this is called
 	// Thread safe
@@ -61,7 +60,7 @@ public:
 
 	//Checks whether the chunk is in the drawlist
 	// Returns false if it is queued to be removed
-	bool isChunkCached(const pos_xyz chunkPosition) const;
+	bool isChunkCached(pos_xyz chunkPosition) const;
 	//Checks whether the chunk is in the drawlist
 	// Returns false if it is queued to be removed
 	bool isChunkCached(const Chunk& chunk) const;
@@ -79,25 +78,15 @@ private:
 	static void addChunkToBuffer(const Chunk::ChunkMesh chunk);
 	Counter m_chunkBufferingCounter;
 
-	//Returns whether the buffer should be condensed
-	bool shouldCondense() const;
-	//Return whether the buffers should be reallocated and remade
-	bool shouldReallocate() const;
-	
 	//Returns the number of bytes used in the buffer
 	size_t numBytesOfCachedChunks() const;
-
-	//Compresses and realigns the space and offsets within the buffer
-	void condenseBuffer();
-	//Reallocate and clear all the existing data in the buffers
-	void reallocateBuffers();
 
 	ChunkDrawInfo createDrawInfoFromChunk(const Chunk& chunk) const;
 
 	using IndexMesh = std::vector<indexType>;
-	static const IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo);
+	static IndexMesh buildIndexMesh(const ChunkDrawInfo& drawInfo);
 	
-	bool isMarkedDroppable(const pos_xyz chunk_pos) const;
+	bool isMarkedDroppable(pos_xyz chunk_pos) const;
 
 	//World Ref
 	const World& m_world;
@@ -107,19 +96,13 @@ private:
 	
 	//Chunk Draw Info
 	std::vector<Chunk::ChunkMesh> m_chunkInfo;
+
 	//Use like a GC
 	//Maybe make a MPMC or otherwise lockless safe queue?
 	std::vector<pos_xyz> m_droppableChunks;
 
-	//Stores the open areas of the buffer
-	std::vector<std::span<indexType>> m_open_spans;
-	std::span<indexType> m_parent_span;
-
-	std::span<indexType> reserveSlot(u32 indicesCount);
 
 	//The Various mutex(es) and counters
-	mutable std::shared_mutex m_slot_lock;	//For the buffer spans sub allocations
 	mutable std::shared_mutex m_drop_lock;	//For Drop lists
 	mutable std::shared_mutex m_cache_lock;	//For drawinfo
-	Counter m_failedAllocationsCounter;
 };

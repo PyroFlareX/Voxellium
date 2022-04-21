@@ -159,7 +159,7 @@ void Renderer::recreateChunkDrawLists()
 
 void Renderer::passChunkMeshGenerator(const void* chunk_mesh_manager)
 {
-	m_chunkRenderer->p_mesh_manager = (const ChunkMeshManager*)chunk_mesh_manager;
+	m_chunkRenderer->p_mesh_manager = (ChunkMeshManager*)chunk_mesh_manager;
 }
 
 void Renderer::render(Camera& cam)
