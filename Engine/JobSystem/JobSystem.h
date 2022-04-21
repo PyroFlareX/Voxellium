@@ -21,15 +21,18 @@ struct Job
 	Job(JobFn task, void** data) noexcept;
 	Job(JobFn task, Counter& counter) noexcept;
 	Job(JobFn task, Counter& counter, void** data) noexcept;
-	
 #if JOB_STRUCT_PADDING
 	Job(JobFn task, void** data, const size_t array_len) noexcept;
 	Job(JobFn task, Counter& counter, void** data, const size_t array_len) noexcept;
-#endif
+#endif //JOB_STRUCT_PADDING
+
+	Job(Job&&) noexcept = default;
+	Job(Job const&) noexcept = default;
+	Job& operator=(Job&&) noexcept = default;
+	Job& operator=(Job const&) noexcept = default;
 	//No-throw Destructable
 	~Job() noexcept = default;
 
-	///	Members
 	//The task function, a lambda
 	JobFn job_task;
 
@@ -44,33 +47,54 @@ struct Job
 	size_t null = 0; //Filler to get to 96 bytes (maybe cacheline idk)
 #endif
 
-	///Helper Functions
 	//Execute the job
 	inline void execute()
 	{
 		job_task(*this);
 		
 		assert(counter != nullptr);
-		*counter--;
+		--(*counter);
 	}
+
 	//Retreive the pointer passed into the job userdata at this index
 	template<typename T>
-	T* getPointerAtIndex(const int index)
+	constexpr T* getPointerAtIndex(const int index)
 	{
-		assert((length > index) && (user_data != nullptr));
+#if JOB_STRUCT_PADDING
+		assert(length > index);
+#endif //JOB_STRUCT_PADDING
+		assert(user_data != nullptr);
+		assert(user_data[index] != nullptr);
+		
 		return reinterpret_cast<T*>(user_data[index]);
 	}
+	
+	//Get a const pointer from the job userdata at this index
+	template<typename T>
+	constexpr const T* getPointerAtIndex(const int index) const
+	{
+#if JOB_STRUCT_PADDING
+		assert(length > index);
+#endif //JOB_STRUCT_PADDING
+		assert(user_data != nullptr);
+		assert(user_data[index] != nullptr);
+
+		return reinterpret_cast<T*>(user_data[index]);
+	}
+
 	//Get a reference to the item passed in this index of the userdata
 	template<typename T>
-	T& getReferenceAtIndex(const int index)
+	constexpr T& getRefAtIndex(const int index)
 	{
 		return *getPointerAtIndex<T>(index);
 	}
 
-	Job(Job&&) noexcept = default;
-	Job(Job const&) noexcept = default;
-	Job& operator=(Job&&) noexcept = default;
-	Job& operator=(Job const&) noexcept = default;
+	//Get a const reference to the item passed in this index of the userdata
+	template<typename T>
+	constexpr const T& getRefAtIndex(const int index) const
+	{
+		return *getPointerAtIndex<T>(index);
+	}
 };
 
 namespace bs

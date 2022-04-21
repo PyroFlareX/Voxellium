@@ -17,7 +17,7 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 	std::cout << "Generating Chunks and Meshes\n";
 
 	auto& jobSystem = bs::getJobSystem();
-	Counter chunk_gen_counter(0);
+	Counter chunk_gen_counter{0};
 
 	for(auto chunk_x = min; chunk_x < max; ++chunk_x)
 	{
@@ -44,7 +44,7 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 							}
 						}
 					}
-					std::cout << "Chunk empty?: " << chunk.checkIfEmpty() << "\n";;
+					std::cout << "Chunk empty?: " << (chunk.checkIfEmpty() ? "true" : "false") << "\n";;
 
 					const bool result = world_ptr->getMeshManager().cacheChunk(chunk);
 

@@ -26,14 +26,14 @@ namespace bs
 			job.counter = &m_main_counter;
 		}
 
-		*job.counter++;
+		++(*job.counter);
 		normalPriority.emplace(job);
 	}
 
 	void JobSystem::schedule(Job job, Counter& counter)
 	{
 		job.counter = &counter;
-		*job.counter++;
+		++(*job.counter);
 		normalPriority.emplace(job);
 	}
 
@@ -44,14 +44,14 @@ namespace bs
 			job.counter = &m_main_counter;
 		}
 		
-		*job.counter++;
+		++(*job.counter);
 		highPriority.emplace(job);
 	}
 
 	void JobSystem::scheduleHighPriority(Job job, Counter& counter)
 	{
 		job.counter = &counter;
-		*job.counter++;
+		++(*job.counter);
 		highPriority.emplace(job);
 	}
 
@@ -62,14 +62,14 @@ namespace bs
 			job.counter = &m_main_counter;
 		}
 		
-		*job.counter++;
+		++(*job.counter);
 		lowPriority.emplace(job);
 	}
 
 	void JobSystem::scheduleLowPriority(Job job, Counter& counter)
 	{
 		job.counter = &counter;
-		*job.counter++;
+		++(*job.counter);
 		lowPriority.emplace(job);
 	}
 
@@ -80,7 +80,7 @@ namespace bs
 			job.counter = &m_background_counter;
 		}
 		
-		*job.counter++;
+		++(*job.counter);
 		nonCounterJobs.emplace(job);
 	}
 
@@ -96,9 +96,9 @@ namespace bs
 
 	void JobSystem::waitWithCounter(const unsigned int target, const Counter& counter)
 	{
-		bool shouldExecuteOtherJobs = true;
+		constexpr bool shouldExecuteOtherJobs = true;
 
-		while(target < counter.load())
+		while(target < counter.load(std::memory_order_acquire))
 		{
 			//Do some jobs on the waiting thread
 			if(shouldExecuteOtherJobs)
@@ -106,23 +106,23 @@ namespace bs
 				Job job;
 				if(highPriority.try_pop(job))
 				{
-					job.job_task(job);
-					job.counter--;
+					job.execute();
+					continue;
 				}
-				else if(normalPriority.try_pop(job))
+				if(normalPriority.try_pop(job))
 				{
-					job.job_task(job);
-					job.counter--;
+					job.execute();
+					continue;
 				}
-				else if(lowPriority.try_pop(job))
+				if(lowPriority.try_pop(job))
 				{
-					job.job_task(job);
-					job.counter--;
+					job.execute();
+					continue;
 				}
-				else if(nonCounterJobs.try_pop(job))
+				if(nonCounterJobs.try_pop(job))
 				{
-					job.job_task(job);
-					job.counter--;
+					job.execute();
+					continue;
 				}
 			}
 		}
@@ -174,28 +174,27 @@ namespace bs
 			Job job;
 			if(highPriority.try_pop(job))
 			{
-				job.job_task(job);
-				job.counter--;
+				job.execute();
+				continue;
 			}
-			else if(normalPriority.try_pop(job))
+			if(normalPriority.try_pop(job))
 			{
-				job.job_task(job);
-				job.counter--;
+				job.execute();
+				continue;
 			}
-			else if(lowPriority.try_pop(job))
+			if(lowPriority.try_pop(job))
 			{
-				job.job_task(job);
-				job.counter--;
+				job.execute();
+				continue;
 			}
-			else if(nonCounterJobs.try_pop(job))
+			if(nonCounterJobs.try_pop(job))
 			{
-				job.job_task(job);
-				job.counter--;
+				job.execute();
+				continue;
 			}
-			else
-			{
-				std::this_thread::sleep_for(sleep_duration);
-			}
+
+			//If no jobs available, sleep
+			std::this_thread::sleep_for(sleep_duration);
 		}
 	}
 
