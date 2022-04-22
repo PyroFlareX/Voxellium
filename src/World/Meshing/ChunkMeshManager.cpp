@@ -271,12 +271,17 @@ ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo
 			for(auto i = start; i < end; i += 1)
 			{
 				const u16 faceID = drawInfo.faces[i].faceIndex;
-				const u32 meshIndex = i * 6;
-				const auto indexArray = getIndicesFromFaceIndex(faceID);
+				u32 meshIndex = i * 6;
+				for(const auto& idx : getIndicesFromFaceIndex(faceID))
+				{
+					mesh[meshIndex++] = idx;
+				}
+
+				/*const auto indexArray = getIndicesFromFaceIndex(faceID);
 				for(auto j = 0; j < indexArray.size(); j += 1)
 				{
 					mesh[meshIndex + j] = indexArray[j];
-				}
+				}*/
 			}
 		}, meshingCounter);
 
@@ -287,13 +292,17 @@ ChunkMeshManager::IndexMesh ChunkMeshManager::buildIndexMesh(const ChunkDrawInfo
 	for(auto faceNum = indexRemaining; faceNum < drawInfo.faces.size(); faceNum += 1)
 	{
 		const auto& faceID = drawInfo.faces[faceNum].faceIndex;
-		const auto meshIndex = faceNum * 6;
+		auto meshIndex = faceNum * 6;
+		for(const auto& idx : getIndicesFromFaceIndex(faceID))
+		{
+			mesh[meshIndex++] = idx;
+		}
 
-		const std::array<u32, 6> indexArray = getIndicesFromFaceIndex(faceID);
+		/*const std::array<u32, 6> indexArray = getIndicesFromFaceIndex(faceID);
 		for(auto j = 0; j < indexArray.size(); j += 1)
 		{
 			mesh[meshIndex + j] = indexArray[j];
-		}
+		}*/
 	}
 	jobSystem.waitWithCounter(0, meshingCounter);
 

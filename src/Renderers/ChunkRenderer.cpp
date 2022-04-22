@@ -154,11 +154,11 @@ void ChunkRenderer::buildRenderCommands()
 	const auto chunks_to_draw = p_mesh_manager->getChunkDrawData();
 	for(const auto& chunk : chunks_to_draw)
 	{
-		std::cout << "Chunk Draw Data:\n\t"
+		/*std::cout << "Chunk Draw Data:\n\t"
 			<< "Indices Count: " << chunk->numIndices << "\n\t"
 			<< "Faces Count: " << chunk->faces.size() << "\n\t"
-			<< "Instance ID: " << chunk->instanceID << "\n\t"
-			<< "Starting Byte Offset: " << chunk->startOffset << "\n";
+			<< "Instance ID: " << chunk->instanceID << "\n\t"*//*
+		//	<< "Starting Byte Offset: " << chunk->startOffset << "\n";*/
 			
 		//From byte offset divided by stride to index offset
 		// const u32 baseIndex = chunk->startOffset / sizeof(u32);

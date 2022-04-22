@@ -508,8 +508,10 @@ void Renderer::initDescriptorSetBuffers(const std::vector<DescriptorSetInfo>& se
 	{
 		.dev = device,
 		.bufferType = storageType,
-		.size = NUM_CHUNKS * NUM_FACES_IN_FULL_CHUNK * sizeof(u16),	// 48 KB per chunk
-		.stride = sizeof(u16),
+		//.size = NUM_CHUNKS * NUM_FACES_IN_FULL_CHUNK * sizeof(u16),	// 48 KB per chunk
+
+		.size = NUM_CHUNKS * NUM_FACES_IN_FULL_CHUNK * sizeof(u32),
+		.stride = sizeof(u32),
 	};
 
 	//Chunks Texture Indexing Storage Buffer
@@ -519,10 +521,10 @@ void Renderer::initDescriptorSetBuffers(const std::vector<DescriptorSetInfo>& se
 	void* bufferptr = nullptr;
 	vmaMapMemory(device->getAllocator(), face_texture_buffer->getAllocation(), &bufferptr);
 
-	u16* buffer = (u16*)bufferptr;
-	for(auto varCount = 0; varCount < face_texture_buffer->getSize() / sizeof(u16); varCount += 1)
+	u32* buffer = (u32*)bufferptr;
+	for(auto varCount = 0; varCount < face_texture_buffer->getSize() / sizeof(u32); varCount += 1)
 	{
-		buffer[varCount] = 1;
+		buffer[varCount] = (varCount % 2) + 1;
 	}
 
 	vmaUnmapMemory(device->getAllocator(), face_texture_buffer->getAllocation());

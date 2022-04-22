@@ -262,10 +262,9 @@ std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const
 	void* faceVectors[NUM_SIDES] = { &sideFaces[0], &sideFaces[1], &sideFaces[2], &sideFaces[3], &sideFaces[4], &sideFaces[5] };
 #endif
 
+	pos_xyz direction = { 0, 0, 0 };
 	for(auto side = 0; side < NUM_SIDES; side += 1)
 	{
-		pos_xyz direction = { 0, 0, 0 };
-
 		switch (side)
 		{
 		case 0:
@@ -298,11 +297,11 @@ std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const
 		//Doing the sides
 		const u16 offset = NUM_FACES_PER_SIDE * side;
 
-		for(u16 z = 0; z < CHUNK_SIZE; z += 1)
+		for(auto z = 0; z < CHUNK_SIZE; z += 1)
 		{
-			for(u16 y = 0; y < CHUNK_SIZE; y += 1)
+			for(auto y = 0; y < CHUNK_SIZE; y += 1)
 			{
-				for(u16 x = 0; x < CHUNK_SIZE; x += 1)
+				for(auto x = 0; x < CHUNK_SIZE; x += 1)
 				{
 					const pos_xyz coords(x, y, z);
 					const auto block = chunk.getBlockAt(coords);
@@ -324,9 +323,10 @@ std::vector<ChunkDrawInfo::Face> generateFacesForChunk(const World& world, const
 					if(tempisTransparent(adjBlock))
 					{
 						const u16 faceIndex = toIndex(x, y, z) + offset;
+						//auto texture_id = getBlockTexture(block, side);
 						faces.emplace_back(ChunkDrawInfo::Face
 						{
-							.textureID = (u16)0,
+							.textureID = (u16)2,
 							.faceIndex = faceIndex,
 						});
 					}
