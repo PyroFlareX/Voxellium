@@ -113,9 +113,9 @@ void ChunkRenderer::buildRenderCommands()
 	};
 
 	//Names of the buffers
-	const std::string chunk_buffer_name("chunk_indices");
-	const std::string instance_buffer_name("chunk_instance_data");
-	const std::string texture_storage_buffer_name("chunk_texture_data");
+	static const std::string chunk_buffer_name("chunk_indices");
+	static const std::string instance_buffer_name("chunk_instance_data");
+	static const std::string texture_storage_buffer_name("chunk_texture_data");
 
 	//Command Buffer for recording
 	auto& cmd = m_renderlist[0];
@@ -154,11 +154,11 @@ void ChunkRenderer::buildRenderCommands()
 	const auto chunks_to_draw = p_mesh_manager->getChunkDrawData();
 	for(const auto& chunk : chunks_to_draw)
 	{
-		/*std::cout << "Chunk Draw Data:\n\t"
+		std::cout << "Chunk Draw Data:\n\t"
 			<< "Indices Count: " << chunk->numIndices << "\n\t"
 			<< "Faces Count: " << chunk->faces.size() << "\n\t"
 			<< "Instance ID: " << chunk->instanceID << "\n\t"
-			<< "Starting Byte Offset: " << chunk->startOffset << "\n";*/
+			<< "Starting Byte Offset: " << chunk->startOffset << "\n";
 			
 		//From byte offset divided by stride to index offset
 		// const u32 baseIndex = chunk->startOffset / sizeof(u32);
@@ -168,7 +168,10 @@ void ChunkRenderer::buildRenderCommands()
 		vkCmdDrawIndexed(cmd, chunk->numIndices, 1, /*baseIndex*/0, 0, chunk->instanceID);
 	}
 
-	vkEndCommandBuffer(cmd);
+	if(vkEndCommandBuffer(cmd) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to record command buffer!");
+	}
 
 	recorded = true;
 }

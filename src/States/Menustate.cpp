@@ -35,9 +35,9 @@ void Menustate::update(float dt)
 		if(ImGui::Button("Start", ImGui::GetContentRegionAvail()))
 		{
 			app.pushState(std::make_unique<Worldstate>(app));
+			this->setInactive();
 		}
 	}
-
 	ImGui::End();
 
 	switch(menuIndex)

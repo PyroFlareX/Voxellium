@@ -8,7 +8,8 @@ Application::Application()	:	shouldClose(false)
 	bs::asset_manager = new bs::AssetManager();
 
 	// Loading screen
-	m_states.emplace(std::make_unique<Menustate>(*this));
+	pushState(std::make_unique<Menustate>(*this));
+	// m_states.emplace(std::make_unique<Menustate>(*this));
 	
 	// Needed for setup
 	auto* api_context = new bs::VulkanContext("Voxellium", bs::vec2i{1280, 720});
@@ -132,7 +133,8 @@ void Application::RunLoop()
 
 	while(!m_states.empty())
 	{
-		m_states.pop();
+		// m_states.pop();
+		popState(); //Eh why not
 	}
 }
 
@@ -157,11 +159,18 @@ void Application::requestClose()
 void Application::pushState(GameState state)
 {
 	m_states.emplace(std::move(state));
+
+#ifdef _DEBUG
+	std::cout << "Pushed State!\n";
+#endif
 }
 
 void Application::popState()
 {
 	m_states.pop();
+#ifdef _DEBUG
+	std::cout << "Popped State!\n";
+#endif
 }
 
 Application::GameState& Application::currentState()

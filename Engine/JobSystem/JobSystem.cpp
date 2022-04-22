@@ -98,7 +98,7 @@ namespace bs
 	{
 		constexpr bool shouldExecuteOtherJobs = true;
 
-		while(target < counter.load(std::memory_order_acquire))
+		while(counter.load(std::memory_order_acquire) > target)
 		{
 			//Do some jobs on the waiting thread
 			if(shouldExecuteOtherJobs)

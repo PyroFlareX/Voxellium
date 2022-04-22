@@ -49,6 +49,8 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 					const bool result = world_ptr->getMeshManager().cacheChunk(chunk);
 
 					std::cout << "Caching Chunk result: " << (result ? "true" : "false") << "\n";
+
+					std::cout.flush();
 				}, chunk_gen_counter);
 				jobSystem.schedule(generateChunk, chunk_gen_counter);
 			}
@@ -56,7 +58,9 @@ Worldstate::Worldstate(Application& app) : Basestate(app)
 	}
 
 	std::cout << "Waiting for Generation...\n";
+
 	jobSystem.waitWithCounter(0, chunk_gen_counter);
+
 	std::cout << "Finished!\n";
 }
 
@@ -67,8 +71,6 @@ Worldstate::~Worldstate()
 
 void Worldstate::input(float dt)
 {
-	app.getCamera().follow(m_playerView);
-
 	ImGui::NewFrame();
 	vInput = Input::getInput(dt);
 	const auto& io = ImGui::GetIO();

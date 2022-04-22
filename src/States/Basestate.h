@@ -20,7 +20,7 @@ public:
 protected:
 	Application& app;
 
-	void setInactive()	{	m_active = true;	}
+	void setInactive()	{	m_active = false;	}
 private:
 	bool m_active;
 };
