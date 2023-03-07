@@ -139,8 +139,6 @@ namespace bs
 			throw std::runtime_error("Failed to submit draw command buffer!");
 		}
 		
-		vkQueueWaitIdle(graphicsQueue);
-		
 		if(bs::vk::inFlightFences[i] != VK_NULL_HANDLE) 
 		{
 			vkWaitForFences(device, 1, &bs::vk::inFlightFences[i], VK_TRUE, 500000000);

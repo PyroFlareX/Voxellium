@@ -9,7 +9,6 @@ Application::Application()	:	shouldClose(false)
 
 	// Loading screen
 	pushState(std::make_unique<Menustate>(*this));
-	// m_states.emplace(std::make_unique<Menustate>(*this));
 	
 	// Needed for setup
 	auto* api_context = new bs::VulkanContext("Voxellium", bs::vec2i{1280, 720});
